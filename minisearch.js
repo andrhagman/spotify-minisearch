@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.8 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.9 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.8";
+  const VERSION = "0.3.9";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -370,7 +370,11 @@
     });
     on(win, "pointerup", () => { drag = null; saveBounds(); });
     on(win, "pointercancel", () => { drag = null; });
-    on(win, "blur", () => { setVolumeOpen(false); });
+    on(win, "blur", () => {
+      setVolumeOpen(false);
+      $("query").value = "";
+      runSearch(); // Also cancels debounce and invalidates in-flight results.
+    });
     on(header, "lostpointercapture", () => { drag = null; });
     on($("close"), "click", () => win.close());
     on($("previous"), "click", () => action(() => sp.Player.back()));

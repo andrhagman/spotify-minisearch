@@ -89,6 +89,7 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.equal(await layer.isVisible(), false);
     });
     await t.test('keyboard navigates results and Ctrl+F returns to search', async () => {
+      await search('midnight'); await waitRows(6);
       await query.focus(); await query.press('ArrowDown');
       assert.equal(await page.evaluate(() => document.activeElement.className), 'result-play');
       await page.keyboard.press('ArrowDown');
@@ -129,6 +130,26 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.equal(await rows.count(), 0);
       assert.equal(await page.locator('#results').isVisible(), false);
       assert.equal(await page.locator('#results').getAttribute('aria-busy'), 'false');
+    });
+    await t.test('unfocusing the window clears search and prevents pending results returning', async () => {
+      await search('midnight'); await waitRows(6);
+      await query.focus(); await query.press('Tab');
+      assert.equal(await query.inputValue(), 'midnight', 'Moving focus between mini player controls must not clear search');
+      await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+      assert.equal(await query.inputValue(), '');
+      assert.equal(await rows.count(), 0);
+      assert.equal(await page.locator('#results').isVisible(), false);
+      assert.equal(await query.getAttribute('aria-expanded'), 'false');
+      await search('slow');
+      await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+      await page.waitForTimeout(1000);
+      assert.equal(await rows.count(), 0, 'An in-flight response must not restore cleared results');
+      const before = await page.evaluate(() => mockCalls.searches.length);
+      await query.fill('midnight');
+      await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+      await page.waitForTimeout(400);
+      assert.equal(await page.evaluate(() => mockCalls.searches.length), before, 'Unfocus cancels pending debounced search');
+      assert.equal(await query.inputValue(), '');
     });
     await t.test('empty and failed searches provide recovery states', async () => {
       await search('empty'); await page.getByText('No songs found. Try another title or artist.', { exact: true }).waitFor();

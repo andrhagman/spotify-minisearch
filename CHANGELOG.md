@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.9 — 2026-10-28
+
+- Clear the search field and results when the mini player loses window focus.
+- Cancel pending searches so late responses cannot refill the cleared dropdown.
+- Keep search intact when moving focus between controls within MiniSearch.
+
 ## 0.3.8 — 2026-10-28
 
 - Add explicit prerequisites, beginner installation steps, and direct release downloads.

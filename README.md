@@ -48,7 +48,7 @@ The first command verifies installation; running Spicetify once initializes its 
 
 ### 3. Download MiniSearch
 
-**[Download MiniSearch v0.3.8 ZIP](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.8/minisearch-v0.3.8.zip)**, then choose **Extract All**. Download the `minisearch-v0.3.8.zip` asset from the [release page](https://github.com/andrhagman/spotify-minisearch/releases/tag/v0.3.8), rather than GitHub's automatically generated source-code ZIP.
+**[Download MiniSearch v0.3.9 ZIP](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.9/minisearch-v0.3.9.zip)**, then choose **Extract All**. Download the `minisearch-v0.3.9.zip` asset from the [release page](https://github.com/andrhagman/spotify-minisearch/releases/tag/v0.3.9), rather than GitHub's automatically generated source-code ZIP.
 
 Open PowerShell in the extracted folder containing `install.ps1`, `minisearch.js`, and `README.md`. Run:
 
@@ -85,7 +85,7 @@ The shortcut uses a small hidden PowerShell launcher, with no background polling
 
 ### Manual install (regular desktop)
 
-Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.8/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
+Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.9/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
 
 ```powershell
 spicetify config extensions minisearch.js
@@ -98,6 +98,7 @@ For the Store edition, use the release ZIP installer so the writable asset direc
 
 - Type a **song title or artist**. Search starts after a short pause; **Enter** searches immediately.
 - Click a result to **play it now**. Click **+** to **add it to your queue**.
+- Clicking another window clears the search field and results. Moving between controls inside MiniSearch keeps the search.
 - The player initially opens at **320×148**, then remembers your window size and position across Spotify restarts. Results appear in a dropdown only when songs are found; clearing search collapses the window.
 - Playback controls, a volume popover, shuffle, repeat, and copy-song-link stay above search.
 - Drag the MiniSearch header to move the window. Resize using the native frame; results scroll inside it.
@@ -146,7 +147,7 @@ Then close Spotify and reopen it using the original shortcut. The script unregis
 
 ## Privacy
 
-No telemetry, analytics, external music services, persistent search history, or extension update checks. Searches go to Spotify through Spicetify's authenticated API wrapper; artwork loads from URLs returned by Spotify. MiniSearch does not read or store your access token. Queries and results stay in memory and are discarded on close. Window size and position are saved locally in Spotify's browser storage. The Store launcher checks the **local** installed package version; it does not use remote debugging or open a debugging port.
+No telemetry, analytics, external music services, persistent search history, or extension update checks. Searches go to Spotify through Spicetify's authenticated API wrapper; artwork loads from URLs returned by Spotify. MiniSearch does not read or store your access token. Queries and results stay in memory and are discarded on close or when the mini player loses window focus. Window size and position are saved locally in Spotify's browser storage. The Store launcher checks the **local** installed package version; it does not use remote debugging or open a debugging port.
 
 ## Develop
 
