@@ -4,7 +4,7 @@
 
 A lightweight [Spicetify](https://spicetify.app/) extension for Spotify desktop: an always-on-top player with **song search, Play now, and Add to queue**.
 
-**Works with the Microsoft Store edition on Windows.** Tested with Spotify **1.3.6.1921** and Spicetify **2.46.4**, including real catalog search, playback, and queueing. The Windows installer creates a separate **Spotify MiniSearch** shortcut; your Store installation stays installed.
+**Open regular Spotify normally—MiniSearch loads with it.** Tested on Windows with Spotify **1.3.6.1921** and Spicetify **2.46.4**. Use the magnifying-glass button to open the mini player. The Microsoft Store edition has an optional separate launcher; use regular desktop Spotify if you want your usual Spotify icon to load the extension.
 
 <img src="docs/compact.png" width="320" alt="Compact MiniSearch player with artwork, playback controls and search">
 
@@ -38,7 +38,7 @@ The shortcut uses a small hidden PowerShell launcher, with no background polling
 
 ### Manual install (regular desktop)
 
-Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.2.3/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
+Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.0/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
 
 ```powershell
 spicetify config extensions minisearch.js
@@ -51,7 +51,7 @@ For the Store edition, use the release ZIP installer so the writable asset direc
 
 - Type a **song title or artist**. Search starts after a short pause; **Enter** searches immediately.
 - Click a result to **play it now**. Click **+** to **add it to your queue**.
-- The player opens at **320×164**. Results appear in a dropdown only when songs are found; clearing search collapses the window.
+- The player initially opens at **320×164**, then remembers your window size and position across Spotify restarts. Results appear in a dropdown only when songs are found; clearing search collapses the window.
 - Playback controls, a volume popover, shuffle, repeat, Liked Songs, and copy-song-link stay above search.
 - Drag the MiniSearch header to move the window. Resize using the native frame; results scroll inside it.
 
@@ -86,7 +86,7 @@ Then close Spotify and reopen it using the original shortcut. The script unregis
 
 ## Privacy
 
-No telemetry, analytics, external music services, persistent search history, or extension update checks. Searches go to Spotify through Spicetify's authenticated API wrapper; artwork loads from URLs returned by Spotify. MiniSearch does not read or store your access token. Queries and results stay in memory and are discarded on close. The Store launcher checks the **local** installed package version; it does not use remote debugging or open a debugging port.
+No telemetry, analytics, external music services, persistent search history, or extension update checks. Searches go to Spotify through Spicetify's authenticated API wrapper; artwork loads from URLs returned by Spotify. MiniSearch does not read or store your access token. Queries and results stay in memory and are discarded on close. Window size and position are saved locally in Spotify's browser storage. The Store launcher checks the **local** installed package version; it does not use remote debugging or open a debugging port.
 
 ## Develop
 

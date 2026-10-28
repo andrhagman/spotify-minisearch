@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-10-28
+
+- Keep manual compact sizes when clicking playback controls or showing status messages.
+- Collapse the results area while replacing a search, including failed searches.
+- Remember window size and position across closing and restarting Spotify.
+- Preserve separate compact and results heights after manual resizing.
+- Recover saved positions onto the screen when only one display is available.
+- Document regular desktop Spotify as the option for opening with the usual Spotify icon.
+
 ## 0.2.3 — 2026-10-28
 
 - Escape clears search and dismisses popovers without closing the mini player, including when search is already empty.

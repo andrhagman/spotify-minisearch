@@ -185,6 +185,31 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.match(await page.evaluate(() => mockCalls.notification), /picture-in-picture support/);
       await page.unroute(pattern, handler);
     });
+    await t.test('compact controls and notices never grow the window; failed searches collapse results', async () => {
+      const small = await browser.newPage({ viewport: { width: 320, height: 164 } });
+      await small.goto(base);
+      await small.evaluate(() => {
+        controller.dispose();
+        window.resizeRequests = [];
+        window.resizeTo = (...args) => resizeRequests.push(args);
+        window.controller = MiniSearch.mount(window, Spicetify, { resizeWindow: true, geometry: { compactHeight: 300 } });
+      });
+      await small.getByRole('button', { name: 'Shuffle', exact: true }).click();
+      await small.getByRole('button', { name: 'Copy song link' }).click();
+      assert.deepEqual(await small.evaluate(() => resizeRequests), [], 'Controls and success messages preserve the compact height');
+      const input = small.getByRole('textbox', { name: 'Search songs or artists' });
+      await input.fill('midnight'); await input.press('Enter');
+      await small.waitForFunction(() => document.querySelectorAll('.result').length === 6);
+      // Simulate an immediate manual shrink following the automatic expansion.
+      await small.evaluate(() => window.dispatchEvent(new Event('resize')));
+      await input.fill('offline'); await input.press('Enter');
+      await small.getByText('Search is unavailable. Press Enter to retry.', { exact: true }).waitFor();
+      assert.equal(await input.getAttribute('aria-expanded'), 'false');
+      assert.equal(await small.locator('#results').isVisible(), false);
+      const requests = await small.evaluate(() => resizeRequests);
+      assert.ok(requests[0][1] > requests.at(-1)[1], 'A failed replacement search collapses back to the small height');
+      await small.close();
+    });
     await t.test('real Chromium picture-in-picture window opens and can reopen', async () => {
       // Fixed Playwright viewports are inherited by PiP and hide real native
       // content resizing. Use a normal window for this geometry check.
@@ -208,11 +233,28 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.equal(await pipPage.getByRole('textbox', { name: 'Search songs or artists' }).inputValue(), '');
       await pipPage.keyboard.press('Escape');
       assert.equal(await page.evaluate(() => Boolean(documentPictureInPicture.window && !documentPictureInPicture.window.closed)), true, 'Escape with an empty query must keep MiniSearch open');
+      await page.waitForTimeout(400);
+      await pipPage.evaluate(() => {
+        const button = document.createElement('button'); button.id = 'resize-test';
+        button.textContent = 'Resize test window'; button.style.cssText = 'position:fixed;top:0;left:0;z-index:10000';
+        button.onclick = () => window.resizeTo(480, 242 + Math.max(0, outerHeight - innerHeight));
+        document.body.append(button);
+      });
+      await pipPage.locator('#resize-test').click();
+      await page.waitForFunction(() => {
+        const saved = JSON.parse(localStorage.getItem(MiniSearch.GEOMETRY_KEY));
+        return saved?.width >= 400 && saved?.compactHeight >= 200;
+      }, null, { timeout: 5000 });
+      const saved = await page.evaluate(() => JSON.parse(localStorage.getItem(MiniSearch.GEOMETRY_KEY)));
       await pipPage.keyboard.press('Control+Shift+k').catch(error => { if (!pipPage.isClosed()) throw error; });
       await page.waitForFunction(() => !documentPictureInPicture.window);
       assert.deepEqual(await page.evaluate(() => Object.values(mockCalls.listeners)), [0, 0, 0]);
+      await page.reload(); // A new extension instance must read persisted preferences.
       await page.locator('#launcher').click();
       await page.waitForFunction(() => documentPictureInPicture.window?.document.getElementById('query'));
+      const restored = await page.evaluate(() => ({ width: documentPictureInPicture.window.innerWidth, height: documentPictureInPicture.window.innerHeight }));
+      assert.ok(Math.abs(restored.width - saved.width) <= 4, `Restored width ${restored.width} should match ${saved.width}`);
+      assert.ok(Math.abs(restored.height - saved.compactHeight) <= 4, `Restored height ${restored.height} should match ${saved.compactHeight}`);
       await page.evaluate(() => documentPictureInPicture.window.close());
       await page.close();
     });

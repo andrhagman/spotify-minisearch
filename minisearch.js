@@ -1,4 +1,4 @@
-/* MiniSearch v0.2.3 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.0 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,8 +9,44 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.2.3";
+  const VERSION = "0.3.0";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
+  const GEOMETRY_KEY = "minisearch:window:v1";
+  function normalizeGeometry(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const size = (value, fallback, min, max) => typeof value === "number" && Number.isFinite(value) ? Math.max(min, Math.min(max, Math.round(value))) : fallback;
+    const geometry = {
+      width: size(raw.width, 320, 280, 4096),
+      compactHeight: size(raw.compactHeight ?? raw.height, 164, 164, 2160),
+      expandedHeight: size(raw.expandedHeight, 398, 240, 2160),
+    };
+    if (typeof raw.x === "number" && Number.isFinite(raw.x) && Math.abs(raw.x) < 100000 && typeof raw.y === "number" && Number.isFinite(raw.y) && Math.abs(raw.y) < 100000) {
+      geometry.x = Math.round(raw.x); geometry.y = Math.round(raw.y);
+    }
+    return geometry;
+  }
+  function readGeometry(storage) {
+    try { return normalizeGeometry(JSON.parse(storage.getItem(GEOMETRY_KEY))); } catch { return null; }
+  }
+  function writeGeometry(storage, geometry) {
+    try { storage.setItem(GEOMETRY_KEY, JSON.stringify(normalizeGeometry(geometry))); } catch { /* Storage may be disabled. */ }
+  }
+  function windowOptions(geometry, screen) {
+    const saved = normalizeGeometry(geometry);
+    const options = { width: saved?.width || 320, height: saved?.compactHeight || 164, preferInitialWindowPlacement: true };
+    if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+      let { x, y } = saved;
+      // Preserve negative coordinates on multi-monitor desktops. If only one
+      // display remains, bring a previously disconnected window back on screen.
+      if (screen?.isExtended === false && screen.availWidth > 0 && screen.availHeight > 0) {
+        const left = screen.availLeft || 0, top = screen.availTop || 0;
+        x = Math.max(left, Math.min(x, left + Math.max(0, screen.availWidth - options.width)));
+        y = Math.max(top, Math.min(y, top + Math.max(0, screen.availHeight - options.height)));
+      }
+      options.cefOptions = { position: { x, y }, resizable: true };
+    }
+    return options;
+  }
   const ICONS = {
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
     close: '<path d="m6 6 12 12M6 18 18 6"/>',
@@ -134,7 +170,7 @@
     @media(prefers-reduced-motion:no-preference){button{transition:background .12s ease,opacity .12s ease}}
   `;
 
-  function mount(win, sp, { resizeWindow = false } = {}) {
+  function mount(win, sp, { resizeWindow = false, geometry = null, onBoundsChange = null } = {}) {
     const doc = win.document;
     doc.title = "MiniSearch";
     const style = doc.createElement("style");
@@ -155,22 +191,28 @@
     const $ = id => doc.getElementById(id);
     let disposed = false, requestID = 0, timer = null, seeking = false;
     let actionID = 0, drag = null, expanded = false;
+    const preferred = normalizeGeometry(geometry) || normalizeGeometry({});
+    let pendingHeight = null;
+    function saveBounds() {
+      if (!onBoundsChange || win.innerWidth <= 0 || win.innerHeight <= 0) return;
+      onBoundsChange({ ...preferred, width: win.innerWidth, x: win.screenX, y: win.screenY });
+    }
     function sizeWindow() {
       if (!resizeWindow || disposed) return;
-      const notice = $("status").textContent;
-      if (notice === "Searching Spotify…") return;
       const chrome = Math.max(0, win.outerHeight - win.innerHeight);
-      const height = (expanded ? 398 : 164 + (notice ? 22 : 0)) + chrome;
+      const contentHeight = expanded ? preferred.expandedHeight : preferred.compactHeight;
+      const height = contentHeight + chrome;
       // A PiP resize consumes user activation. Do not spend it on a no-op,
       // a loading message, or every keystroke before search results arrive.
       if (Math.abs(win.outerHeight - height) <= 1) return;
-      try { win.resizeTo(Math.max(280, win.outerWidth || 320), height); } catch { /* Some hosts restrict window sizing. */ }
+      try { pendingHeight = contentHeight; win.resizeTo(Math.max(280, win.outerWidth || 320), height); } catch { pendingHeight = null; }
     }
     function setExpanded(value) {
+      const changed = expanded !== Boolean(value);
       expanded = Boolean(value);
       $("results").hidden = !expanded; $("results-head").hidden = !expanded;
       $("query").setAttribute("aria-expanded", String(expanded));
-      sizeWindow();
+      if (changed) sizeWindow();
     }
     const removers = [];
     const on = (target, event, fn, options) => {
@@ -181,7 +223,6 @@
       if (disposed) return;
       $("status").textContent = message;
       $("status").dataset.error = String(error);
-      sizeWindow();
     };
     function empty(title, description) {
       const box = doc.createElement("div"); box.className = "empty";
@@ -238,7 +279,7 @@
       $("count").textContent = "";
       $("results").setAttribute("aria-busy", "false");
       if (!query) { setExpanded(false); $("results").replaceChildren(); status(""); return; }
-      $("results").hidden = true; $("results-head").hidden = true;
+      setExpanded(false);
       $("results").replaceChildren();
       $("results").setAttribute("aria-busy", "true"); status("Searching Spotify…");
       try {
@@ -294,6 +335,15 @@
       } catch { status("Waiting for Spotify playback…"); }
     }
     const header = app.querySelector(".bar");
+    on(win, "resize", () => {
+      // Match the requested height instead of ignoring all resize events for a
+      // time window: a quick manual resize must become the new preference.
+      if (pendingHeight === null || Math.abs(win.innerHeight - pendingHeight) > 1) {
+        preferred[expanded ? "expandedHeight" : "compactHeight"] = Math.max(expanded ? 240 : 164, win.innerHeight);
+      }
+      pendingHeight = null;
+      saveBounds();
+    });
     // Native app-region dragging handles supported CEF builds. On other builds,
     // move the PiP window directly while the header owns the pointer.
     on(header, "pointerdown", e => {
@@ -305,7 +355,7 @@
       if (!(e.buttons & 1)) { drag = null; return; }
       win.moveTo(Math.round(e.screenX - drag.x), Math.round(e.screenY - drag.y));
     });
-    on(win, "pointerup", () => { drag = null; });
+    on(win, "pointerup", () => { drag = null; saveBounds(); });
     on(win, "pointercancel", () => { drag = null; });
     on(win, "blur", () => { drag = null; });
     on(header, "lostpointercapture", () => { drag = null; });
@@ -330,7 +380,8 @@
       win.clearTimeout(timer); $("clear").hidden = !$("query").value;
       if (!$("query").value.trim()) { runSearch(); return; }
       // Remove old results immediately so they cannot be mistaken for the new query.
-      $("results").replaceChildren(); $("results").hidden = true; $("results-head").hidden = true; $("count").textContent = "";
+      setExpanded(false);
+      $("results").replaceChildren(); $("count").textContent = "";
       $("results").setAttribute("aria-busy", "true"); status("Searching Spotify…");
       timer = win.setTimeout(runSearch, 300);
     });
@@ -365,6 +416,7 @@
     }
     function dispose() {
       if (disposed) return;
+      saveBounds();
       disposed = true; ++requestID; ++actionID; win.clearTimeout(timer);
       for (const remove of removers.splice(0)) remove();
     }
@@ -377,6 +429,7 @@
     if (host.__miniSearchLoaded) return;
     host.__miniSearchLoaded = true;
     let pip = null, controller = null, opening = false, attempts = 0;
+    let geometry = readGeometry(host.localStorage);
     function ready() {
       const sp = host.Spicetify;
       if (!sp?.Player?.addEventListener || !sp?.CosmosAsync || !sp?.addToQueue) {
@@ -394,10 +447,16 @@
         opening = true;
         try {
           // Called directly from a click/key event to retain transient user activation.
-          const win = await host.documentPictureInPicture.requestWindow({ width: 320, height: 164 });
+          const options = windowOptions(geometry, host.screen);
+          const win = await host.documentPictureInPicture.requestWindow(options);
           pip = win;
           controller?.dispose();
-          controller = mount(win, sp, { resizeWindow: true });
+          // CEF's creation-time position is the primary path. moveTo also
+          // restores it on older Spotify builds that support the move API.
+          if (options.cefOptions?.position) { try { win.moveTo(options.cefOptions.position.x, options.cefOptions.position.y); } catch {} }
+          controller = mount(win, sp, { resizeWindow: true, geometry, onBoundsChange: bounds => {
+            geometry = normalizeGeometry(bounds); writeGeometry(host.localStorage, geometry);
+          } });
           win.addEventListener("pagehide", () => { controller?.dispose(); controller = null; if (pip === win) pip = null; }, { once: true });
         } catch {
           controller?.dispose(); controller = null;
@@ -422,5 +481,5 @@
     }
     ready();
   }
-  return { VERSION, formatTime, imageURL, normalizeTrack, parseSearch, searchTracks, mount, start };
+  return { VERSION, GEOMETRY_KEY, normalizeGeometry, readGeometry, writeGeometry, windowOptions, formatTime, imageURL, normalizeTrack, parseSearch, searchTracks, mount, start };
 });

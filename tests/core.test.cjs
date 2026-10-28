@@ -4,6 +4,27 @@ const mini = require('../minisearch.js');
 const uri = 'spotify:track:0123456789abcdefghijkl';
 const raw = { uri, name: 'Song <title>', artists: [{ name: 'Artist' }], album: { name: 'Album', images: [{ url: 'https://i.scdn.co/image/test', width: 64 }] }, duration_ms: 125000 };
 
+test('window preferences survive storage and preserve negative monitor coordinates', () => {
+  const storage = new Map();
+  const adapter = { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) };
+  mini.writeGeometry(adapter, { x: -380, y: 1737, width: 480, compactHeight: 242, expandedHeight: 510 });
+  const restored = mini.readGeometry(adapter);
+  assert.deepEqual(restored, { x: -380, y: 1737, width: 480, compactHeight: 242, expandedHeight: 510 });
+  const options = mini.windowOptions(restored, { isExtended: true });
+  assert.deepEqual(options.cefOptions.position, { x: -380, y: 1737 });
+  assert.equal(options.width, 480); assert.equal(options.height, 242);
+});
+test('invalid or blocked window storage does not prevent opening', () => {
+  assert.equal(mini.readGeometry({ getItem: () => 'invalid json' }), null);
+  assert.equal(mini.readGeometry({ getItem: () => { throw new Error('blocked'); } }), null);
+  assert.doesNotThrow(() => mini.writeGeometry({ setItem: () => { throw new Error('blocked'); } }, {}));
+  assert.equal(mini.windowOptions(null).width, 320);
+});
+test('a disconnected secondary screen cannot strand the saved window', () => {
+  const options = mini.windowOptions({ x: -380, y: 1700, width: 480, compactHeight: 242 }, { isExtended: false, availLeft: 0, availTop: 0, availWidth: 1920, availHeight: 1080 });
+  assert.deepEqual(options.cefOptions.position, { x: 0, y: 838 });
+});
+
 test('formats missing, negative and long durations', () => {
   assert.equal(mini.formatTime(undefined), '0:00');
   assert.equal(mini.formatTime(-1), '0:00');

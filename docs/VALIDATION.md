@@ -1,4 +1,10 @@
-# Validation — v0.1.0
+# Validation — v0.3.0
+
+## Regular Windows desktop and resize verification
+
+Regular Spotify 1.3.6.1921 was patched with Spicetify 2.46.4 and launched through the ordinary Spotify icon. The user confirmed MiniSearch works from this launch.
+
+Automated Edge tests cover remembered dimensions after reloading the extension, immediate manual resizing after automatic expansion, compact playback controls and status messages preserving height, and failed replacement searches collapsing the empty results area. These regression cases use simulated Spotify APIs; native Spotify behavior for the latest resize correction has not yet been verified by the user.
 
 ## Live Windows / Microsoft Store verification
 
@@ -27,4 +33,4 @@ The v0.2.0 compact layout, dropdown visibility, expanded controls and shortcut c
 
 ## Limits
 
-Regular desktop Spotify and other operating systems have not been tested live. Future Store updates may require a new compatible Spicetify version. Automatic rebuilding after a real Store update has not yet been observed. This initial preview has the Store search/play/queue path verified as described above.
+Other operating systems have not been tested live. Future Store updates may require a new compatible Spicetify version. Automatic rebuilding after a real Store update has not yet been observed. The Store search/play/queue path was verified as described above.
