@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.13 — 2026-10-28
+
+- Run the short startup observer on the opener so suspended PiP timers do not block repair.
+- Check at 16ms intervals instead of 100ms and repair immediately without an extra queued callback.
+- Stop the observer after startup; ordinary manual resizing remains unconstrained.
+- Add a regression check with suspended child timers and missing child resize events.
+
 ## 0.3.12 — 2026-10-28
 
 - Repair the measured Windows PiP startup frame adjustments without constraining ordinary manual resizing.

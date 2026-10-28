@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.12 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.13 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.12";
+  const VERSION = "0.3.13";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -193,7 +193,7 @@
     @media(prefers-reduced-motion:no-preference){button{transition:background .12s ease,opacity .12s ease}}
   `;
 
-  function mount(win, sp, { resizeWindow = false, geometry = null, onBoundsChange = null } = {}) {
+  function mount(win, sp, { resizeWindow = false, geometry = null, onBoundsChange = null, scheduler = globalThis } = {}) {
     const doc = win.document;
     doc.title = "MiniSearch";
     const style = doc.createElement("style");
@@ -232,7 +232,7 @@
     const bounds = () => ({ width: win.innerWidth, height: win.innerHeight, outerWidth: win.outerWidth, x: win.screenX, y: win.screenY });
     const startup = resizeWindow && sp.Platform?.container === "Desktop" && sp.Platform?.operatingSystem === "Windows"
       ? { time: Date.now(), previous: bounds(), initial: { ...bounds(), width: preferred.width, height: preferred.compactHeight }, firstFrame: false, manualResize: false, repaired: false } : null;
-    let startupTimer = null, startupSaveTimer = null;
+    let startupSaveTimer = null, startupPoll = null;
     function restoreStartupBounds(target) {
       if (disposed || win.closed) return;
       pendingHeight = target.height;
@@ -242,8 +242,8 @@
       try { win.moveTo(target.x, target.y); } catch {}
       // CEF applies moveTo asynchronously after its resize event. Persist the
       // settled position, not the intermediate native frame coordinates.
-      win.clearTimeout(startupSaveTimer);
-      startupSaveTimer = win.setTimeout(() => {
+      scheduler.clearTimeout(startupSaveTimer);
+      startupSaveTimer = scheduler.setTimeout(() => {
         if (disposed || win.closed) return;
         startup.previous = bounds();
         saveBounds();
@@ -393,7 +393,7 @@
       } catch { status("Waiting for Spotify playback…"); }
     }
     const header = app.querySelector(".bar");
-    on(win, "resize", () => {
+    function handleResize() {
       if (startup) {
         const next = bounds(), age = Date.now() - startup.time;
         const previous = startup.previous;
@@ -407,20 +407,20 @@
                 x: Number.isFinite(preferred.x) ? preferred.x : previous.x,
                 y: Number.isFinite(preferred.y) ? preferred.y : previous.y,
               };
-              startupTimer = win.setTimeout(() => restoreStartupBounds(target), 0);
+              restoreStartupBounds(target);
             }
             return;
           }
           startup.repaired = true;
           // One native startup jump, not a general resize constraint. Never
           // persist the expanded native frame as the user's compact size.
-          startupTimer = win.setTimeout(() => restoreStartupBounds(previous), 0);
+          restoreStartupBounds(previous);
           return;
         }
         if (age < 1500 && (next.width !== previous.width || next.height !== previous.height) && pendingHeight === null) startup.manualResize = true;
       }
-      // Never resize in response to a resize event. The native frame owns the
-      // user's drag; responding with resizeTo fights it and causes flicker.
+      // Ordinary resize events only save preferences. The native frame owns
+      // the user's drag; imposing a size here would fight it and flicker.
       // Match the requested height instead of ignoring all resize events for a
       // time window: a quick manual resize must become the new preference.
       if (pendingHeight === null || Math.abs(win.innerHeight - pendingHeight) > 1) {
@@ -428,7 +428,8 @@
       }
       pendingHeight = null;
       saveBounds();
-    });
+    }
+    on(win, "resize", handleResize);
     // Native app-region dragging handles supported CEF builds. On other builds,
     // move the PiP window directly while the header owns the pointer.
     on(header, "pointerdown", e => {
@@ -520,8 +521,8 @@
       if (disposed) return;
       saveBounds();
       disposed = true; ++requestID; ++actionID; win.clearTimeout(timer);
-      win.clearTimeout(startupTimer);
-      win.clearTimeout(startupSaveTimer);
+      scheduler.clearTimeout(startupSaveTimer);
+      scheduler.clearInterval(startupPoll);
       if (resizeWindow && win.resizeTo === ignoreForeignResize) {
         if (resizeDescriptor) Object.defineProperty(win, "resizeTo", resizeDescriptor);
         else delete win.resizeTo;
@@ -532,6 +533,16 @@
     // requestWindow already applies the saved content size. On Windows its
     // outer dimensions briefly belong to the opener, so don't resize here.
     sync(); runSearch(); $("query").focus();
+    if (startup) {
+      // CEF can suspend the PiP window's timers and resize delivery while it is
+      // unfocused. The opener owns this brief startup observer instead.
+      startupPoll = scheduler.setInterval(() => {
+        if (disposed || win.closed || Date.now() - startup.time > 8000) {
+          scheduler.clearInterval(startupPoll); return;
+        }
+        if (win.innerWidth !== startup.previous.width || win.innerHeight !== startup.previous.height) handleResize();
+      }, 16);
+    }
     return { dispose, search: runSearch };
   }
 
@@ -585,7 +596,7 @@
           // CEF's creation-time position is the primary path. moveTo also
           // restores it on older Spotify builds that support the move API.
           if (options.cefOptions?.position) { try { win.moveTo(options.cefOptions.position.x, options.cefOptions.position.y); } catch {} }
-          controller = mount(win, sp, { resizeWindow: true, geometry, onBoundsChange: bounds => {
+          controller = mount(win, sp, { resizeWindow: true, geometry, scheduler: host, onBoundsChange: bounds => {
             geometry = normalizeGeometry(bounds); writeGeometry(host.localStorage, geometry);
           } });
           win.addEventListener("pagehide", () => {

@@ -291,6 +291,52 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.equal(await resizePage.evaluate(() => savedBounds.at(-1).compactHeight), 136);
       await resizePage.close();
     });
+    await t.test('opener repairs startup bounds while child timers and resize events are suspended', async () => {
+      const host = await browser.newPage({ viewport: { width: 320, height: 148 } });
+      await host.goto(base);
+      await host.evaluate(() => {
+        controller.dispose();
+        window.resizeCalls = []; window.childTimers = 0; window.parentDelays = []; window.pollDelays = [];
+        const realNow = Date.now;
+        window.advanceStartupClock = age => { Date.now = () => realNow() + age; };
+        Spicetify.Platform.container = 'Desktop'; Spicetify.Platform.operatingSystem = 'Windows';
+        window.child = {
+          document, innerWidth: 312, innerHeight: 148, outerWidth: 1600, outerHeight: 900,
+          screenX: 480, screenY: 270, closed: false,
+          addEventListener: window.addEventListener.bind(window), removeEventListener: window.removeEventListener.bind(window),
+          setTimeout() { childTimers++; return 0; }, clearTimeout() {},
+          resizeTo(width, height) {
+            resizeCalls.push({ width, height });
+            Object.assign(this, { outerWidth: width, outerHeight: height, innerWidth: width - 16, innerHeight: height - 8 });
+          },
+          moveTo(x, y) { this.screenX = x; this.screenY = y; },
+        };
+        window.controller = MiniSearch.mount(child, Spicetify, {
+          resizeWindow: true,
+          scheduler: {
+            setTimeout(fn, delay) { parentDelays.push(delay); return window.setTimeout(fn, delay); },
+            clearTimeout: window.clearTimeout.bind(window),
+            setInterval(fn, delay) { pollDelays.push(delay); return window.setInterval(fn, delay); },
+            clearInterval: window.clearInterval.bind(window),
+          },
+          geometry: { width: 312, compactHeight: 148, x: 1999, y: 494 },
+        });
+        Object.assign(child, { innerWidth: 326, innerHeight: 169, outerWidth: 342, outerHeight: 177, screenX: 1985, screenY: 473 });
+      });
+      await host.waitForFunction(() => resizeCalls.length === 1 && child.innerWidth === 312 && child.innerHeight === 148);
+      await host.waitForTimeout(150);
+      await host.evaluate(() => {
+        advanceStartupClock(4000);
+        Object.assign(child, { innerWidth: 326, innerHeight: 274, outerWidth: 342, outerHeight: 282, screenX: 1985, screenY: 473 });
+      });
+      await host.waitForFunction(() => resizeCalls.length === 2 && child.innerWidth === 312 && child.innerHeight === 148);
+      assert.equal(await host.evaluate(() => childTimers), 0, 'Startup repair must never depend on the suspended child timer queue');
+      assert.ok(await host.evaluate(() => pollDelays.every(delay => delay <= 16)), 'Check once per frame rather than leaving a visible 100ms expansion');
+      assert.ok(await host.evaluate(() => parentDelays.every(delay => delay > 0)), 'Resize immediately instead of queueing another zero-delay callback');
+      assert.deepEqual(await host.evaluate(() => ({ x: child.screenX, y: child.screenY })), { x: 1999, y: 494 });
+      await host.evaluate(() => controller.dispose());
+      await host.close();
+    });
     await t.test('real Chromium picture-in-picture window opens and can reopen', async () => {
       // Fixed Playwright viewports are inherited by PiP and hide real native
       // content resizing. Use a normal window for this geometry check.

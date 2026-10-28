@@ -1,4 +1,10 @@
-# Validation — v0.3.12
+# Validation — v0.3.13
+
+## Normal launch and opener scheduling
+
+Normal-launch feedback confirmed that the opener-based startup observer stopped persistent growth, while a brief native frame flash remained. The current build reduces observation latency from 100ms to 16ms and removes the extra queued resize callback. Automated tests suspend the child window's timer queue and omit child resize events, verifying that the opener repairs bounds and leaves manual resizing alone. Visual confirmation that the current mitigation removes the remaining flash is pending.
+
+The live diagnostic test described below used temporary inspection of the actual Spotify client; it did not establish identical scheduling behavior on an ordinary launch.
 
 ## Live Windows startup regression
 
