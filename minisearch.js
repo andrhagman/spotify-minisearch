@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.6 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.7 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.6";
+  const VERSION = "0.3.7";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -151,7 +151,7 @@
     .volume-popup{position:absolute;left:9px;bottom:43px;width:125px;padding:12px;background:#252525;border:1px solid #444;border-radius:6px;z-index:4}
     #volume-toggle{position:relative;z-index:4}
     .volume-dismiss-layer{position:absolute;inset:0;z-index:3;-webkit-app-region:no-drag;app-region:no-drag}
-    .search-area{padding:5px 8px 7px;flex-shrink:0}.search-box{display:flex;align-items:center;gap:7px;border:1px solid #383d39;border-radius:5px;background:#171b18;padding:0 8px;color:#aab7ae}
+    .search-area{padding:6px 8px 7px;flex-shrink:0}.search-box{display:flex;align-items:center;gap:7px;border:1px solid #383d39;border-radius:5px;background:#171b18;padding:0 8px;color:#aab7ae}
     .search-box>svg{width:15px;height:15px}.search-box:focus-within{border-color:#7ab78b}.search-box input{min-width:0;flex:1;width:100%;height:29px;border:0;outline:none;background:none;color:#f6fbf7;font-size:12px}
     .search-box input::placeholder{color:#acbcb1}.search-box input:focus-visible{outline:none}.clear{width:25px;height:25px}.clear svg{width:15px}
     .results-head{display:flex;align-items:center;justify-content:space-between;padding:5px 12px 6px;border-top:1px solid #303532;border-bottom:1px solid #ffffff0c;flex-shrink:0}

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.7 — 2026-10-28
+
+- Add 1px between the progress bar and search field.
+
 ## 0.3.6 — 2026-10-28
 
 - Stop correcting window height during native frame resizing, which caused flickering and size jumps.
