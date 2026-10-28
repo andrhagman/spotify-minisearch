@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 — 2026-10-28
+
+- Remove the Save to Liked Songs button from the mini player.
+
 ## 0.3.0 — 2026-10-28
 
 - Keep manual compact sizes when clicking playback controls or showing status messages.

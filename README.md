@@ -38,7 +38,7 @@ The shortcut uses a small hidden PowerShell launcher, with no background polling
 
 ### Manual install (regular desktop)
 
-Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.0/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
+Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.1/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
 
 ```powershell
 spicetify config extensions minisearch.js
@@ -52,7 +52,7 @@ For the Store edition, use the release ZIP installer so the writable asset direc
 - Type a **song title or artist**. Search starts after a short pause; **Enter** searches immediately.
 - Click a result to **play it now**. Click **+** to **add it to your queue**.
 - The player initially opens at **320×164**, then remembers your window size and position across Spotify restarts. Results appear in a dropdown only when songs are found; clearing search collapses the window.
-- Playback controls, a volume popover, shuffle, repeat, Liked Songs, and copy-song-link stay above search.
+- Playback controls, a volume popover, shuffle, repeat, and copy-song-link stay above search.
 - Drag the MiniSearch header to move the window. Resize using the native frame; results scroll inside it.
 
 | Shortcut | Action |

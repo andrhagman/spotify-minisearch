@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.0 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.1 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.0";
+  const VERSION = "0.3.1";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -180,7 +180,7 @@
     app.className = "app";
     // This template contains only our static markup. Spotify metadata always uses textContent.
     app.innerHTML = `
-      <header class="bar" title="MiniSearch v${VERSION} · Drag here to move"><span class="sr-only">MiniSearch v${VERSION}</span><section class="now" aria-label="Now playing"><div id="art-placeholder" class="art placeholder">${icon("music")}</div><img id="art" class="art" alt="" hidden><div class="track-info"><h1 class="title" id="title">Nothing playing yet</h1><p class="artist" id="artist">Find a song below</p></div><div class="track-actions"><button class="icon-button" id="close" aria-label="Close mini player" title="Close">${icon("close")}</button><button class="icon-button" id="like" aria-label="Save to Liked Songs" title="Save to Liked Songs">${icon("plus")}</button></div></section></header>
+      <header class="bar" title="MiniSearch v${VERSION} · Drag here to move"><span class="sr-only">MiniSearch v${VERSION}</span><section class="now" aria-label="Now playing"><div id="art-placeholder" class="art placeholder">${icon("music")}</div><img id="art" class="art" alt="" hidden><div class="track-info"><h1 class="title" id="title">Nothing playing yet</h1><p class="artist" id="artist">Find a song below</p></div><div class="track-actions"><button class="icon-button" id="close" aria-label="Close mini player" title="Close">${icon("close")}</button></div></section></header>
       <div class="controls" aria-label="Playback controls"><button class="icon-button" id="volume-toggle" aria-label="Show volume" title="Volume" aria-expanded="false">${icon("volume")}</button><label class="volume-popup" id="volume-popup" hidden><span class="sr-only">Volume</span><input id="volume" type="range" aria-label="Volume" min="0" max="100" step="1" value="50"></label><button class="icon-button" id="shuffle" aria-label="Shuffle" title="Shuffle" aria-pressed="false">${icon("shuffle")}</button><button class="icon-button" id="previous" aria-label="Previous track" title="Previous">${icon("previous")}</button><button class="icon-button primary" id="play-pause" aria-label="Play" title="Play">${icon("play")}</button><button class="icon-button" id="next" aria-label="Next track" title="Next">${icon("next")}</button><button class="icon-button" id="repeat" aria-label="Repeat off" title="Repeat off" aria-pressed="false">${icon("repeat")}</button><button class="icon-button" id="share" aria-label="Copy song link" title="Copy song link">${icon("share")}</button></div>
       <div class="timeline"><input id="seek" type="range" aria-label="Seek position" min="0" max="1000" value="0" step="1"><div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div></div>
       <form class="search-area" role="search"><label class="search-box">${icon("search")}<span class="sr-only">Search songs or artists</span><input id="query" type="text" placeholder="Search songs or artists" autocomplete="off" spellcheck="false" maxlength="300"><button id="clear" class="icon-button clear" type="button" aria-label="Clear search" title="Clear search" hidden>${icon("close")}</button></label></form>
@@ -320,11 +320,6 @@
       $("repeat").classList.toggle("repeat-one", repeat === 2);
       $("repeat").setAttribute("aria-label", ["Repeat off", "Repeat all", "Repeat one"][repeat] || "Repeat off");
       $("repeat").title = $("repeat").getAttribute("aria-label");
-      $("like").disabled = !item || typeof player.toggleHeart !== "function";
-      const liked = Boolean(player.getHeart?.());
-      $("like").innerHTML = icon(liked ? "check" : "plus");
-      $("like").setAttribute("aria-label", liked ? "Remove from Liked Songs" : "Save to Liked Songs");
-      $("like").title = $("like").getAttribute("aria-label");
       $("share").disabled = !TRACK_URI.test(item?.uri || "") || typeof sp.Platform?.ClipboardAPI?.copy !== "function";
       const duration = Number(player.getDuration()) || 0;
       const progress = Math.min(duration, Math.max(0, Number(player.getProgress()) || 0));
@@ -365,7 +360,6 @@
     on($("next"), "click", () => action(() => sp.Player.next()));
     on($("shuffle"), "click", () => action(async () => { await sp.Player.setShuffle(!sp.Player.getShuffle()); sync(); }));
     on($("repeat"), "click", () => action(async () => { await sp.Player.setRepeat((Number(sp.Player.getRepeat()) + 1) % 3); sync(); }));
-    on($("like"), "click", () => action(async () => { await sp.Player.toggleHeart(); sync(); }));
     on($("share"), "click", () => action(() => sp.Platform.ClipboardAPI.copy("https://open.spotify.com/track/" + sp.Player.data.item.uri.split(":")[2]), "Song link copied"));
     on($("volume-toggle"), "click", () => {
       $("volume-popup").hidden = !$("volume-popup").hidden;

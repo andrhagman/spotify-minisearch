@@ -83,8 +83,6 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       await query.focus(); assert.equal(await page.locator('#results').isVisible(), true);
       await page.getByRole('button', { name: 'Repeat off', exact: true }).click();
       assert.equal(await page.locator('#repeat').getAttribute('aria-label'), 'Repeat all');
-      await page.getByRole('button', { name: 'Save to Liked Songs', exact: true }).click();
-      assert.equal(await page.locator('#like').getAttribute('aria-label'), 'Remove from Liked Songs');
       await page.getByRole('button', { name: 'Copy song link', exact: true }).click();
       assert.equal(await page.evaluate(() => mockCalls.clipboard), 'https://open.spotify.com/track/0000000000000000000002');
       await query.focus();
