@@ -1,4 +1,4 @@
-/* MiniSearch v0.2.1 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.2.2 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.2.1";
+  const VERSION = "0.2.2";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const ICONS = {
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
@@ -97,6 +97,9 @@
     .bar{position:relative;flex-shrink:0;padding:0}
     .bar,.bar *{-webkit-app-region:drag;app-region:drag;user-select:none}
     .bar button,.bar button *{-webkit-app-region:no-drag;app-region:no-drag}
+    /* The volume popup overlaps the header. Its complete painted area must
+       override the native drag region underneath, including the slider track. */
+    .controls,.controls *,.volume-popup,.volume-popup *,input,button,button *{-webkit-app-region:no-drag;app-region:no-drag}
     .brand-icon{color:#9be6b1;display:flex}.brand{font-size:12px;font-weight:650;letter-spacing:.04em}.version{font-size:10px;color:#9ca89f;margin-left:auto}
     .icon-button{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:50%;flex-shrink:0}
     .now{display:flex;align-items:center;gap:10px;padding:8px 8px 4px}.art{width:52px;height:52px;flex-shrink:0;border-radius:4px;background:#25352c;object-fit:cover}
@@ -294,16 +297,17 @@
     // Native app-region dragging handles supported CEF builds. On other builds,
     // move the PiP window directly while the header owns the pointer.
     on(header, "pointerdown", e => {
-      if (e.button !== 0 || e.target.closest("button")) return;
-      drag = { id: e.pointerId, x: e.screenX, y: e.screenY, left: win.screenX, top: win.screenY };
-      header.setPointerCapture(e.pointerId); e.preventDefault();
+      if (e.button !== 0 || e.target.closest("button,input,select,textarea,a,[contenteditable],.volume-popup")) return;
+      drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
     });
-    on(header, "pointermove", e => {
+    on(win, "pointermove", e => {
       if (!drag || drag.id !== e.pointerId) return;
-      win.moveTo(Math.round(drag.left + e.screenX - drag.x), Math.round(drag.top + e.screenY - drag.y));
+      if (!(e.buttons & 1)) { drag = null; return; }
+      win.moveTo(Math.round(e.screenX - drag.x), Math.round(e.screenY - drag.y));
     });
-    on(header, "pointerup", () => { drag = null; });
-    on(header, "pointercancel", () => { drag = null; });
+    on(win, "pointerup", () => { drag = null; });
+    on(win, "pointercancel", () => { drag = null; });
+    on(win, "blur", () => { drag = null; });
     on(header, "lostpointercapture", () => { drag = null; });
     on($("close"), "click", () => win.close());
     on($("previous"), "click", () => action(() => sp.Player.back()));
@@ -334,6 +338,7 @@
     on($("clear"), "click", () => { $("query").value = ""; runSearch(); $("query").focus(); });
     on($("query"), "focus", () => { if ($("query").value.trim() && $("results").querySelector(".result")) setExpanded(true); });
     on(doc, "pointerdown", e => {
+      if (!e.target.closest(".bar") || e.target.closest("button,input,select,textarea,a,[contenteditable],.volume-popup")) drag = null;
       if (!e.target.closest(".search-area,.results,.results-head")) setExpanded(false);
       if (!e.target.closest(".volume-popup,#volume-toggle")) {
         $("volume-popup").hidden = true; $("volume-toggle").setAttribute("aria-expanded", "false");

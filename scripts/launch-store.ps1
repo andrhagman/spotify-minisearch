@@ -38,7 +38,7 @@ try {
     $alreadyPatched = @($mainProcesses | Where-Object { $_.CommandLine -match [regex]::Escape($appsPath) }).Count -gt 0
     if ($mainProcesses -and -not $alreadyPatched) { Get-Process Spotify -ErrorAction SilentlyContinue | Stop-Process }
     $aliasPath = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\Spotify.exe'
-    Start-Process -FilePath $aliasPath -ArgumentList ('--app-directory="' + $appsPath + '"') -WindowStyle Hidden
+    Start-Process -FilePath $aliasPath -ArgumentList ('--app-directory="' + $appsPath + '"') -WindowStyle Normal
 } catch {
     New-Item -ItemType Directory -Path $launcherRoot -Force | Out-Null
     ('MiniSearch: ' + $_.Exception.Message) | Add-Content -LiteralPath $logFile

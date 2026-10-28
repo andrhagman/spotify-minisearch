@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.2 — 2026-10-28
+
+- Exclude the volume popup and slider from the native header drag region they overlap.
+- Clear manual drag state when clicking controls, releasing the pointer, or losing focus.
+- Match Spotify's client-coordinate window movement calculation.
+- Launch the Store helper directly from PowerShell, removing the shortcut's VBScript dependency.
+
 ## 0.2.1 — 2026-10-28
 
 - Ctrl+Shift+K works while Spotify's search or another text field has focus.

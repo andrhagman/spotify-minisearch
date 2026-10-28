@@ -1,10 +1,10 @@
-# MiniSearch v0.2.1 - run from a normal (non-administrator) PowerShell session.
+# MiniSearch v0.2.2 - run from a normal (non-administrator) PowerShell session.
 [CmdletBinding()]
 param([switch]$Uninstall, [switch]$SkipApply, [switch]$NoShortcut)
 
 $ErrorActionPreference = 'Stop'
 $extensionName = 'minisearch.js'
-$releaseVersion = 'v0.2.1'
+$releaseVersion = 'v0.2.2'
 $cli = Get-Command spicetify -ErrorAction SilentlyContinue
 if (-not $cli) {
     $knownCLI = Join-Path $env:LOCALAPPDATA 'spicetify\spicetify.exe'
@@ -47,7 +47,7 @@ if ($Uninstall) {
         $shortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Spotify MiniSearch.lnk'
         if ((-not $NoShortcut) -and (Test-Path -LiteralPath $shortcutPath)) {
             $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
-            if ($shortcut.Arguments -eq ('"' + (Join-Path $launcherRoot 'launch-store.vbs') + '"')) { Remove-Item -LiteralPath $shortcutPath }
+            if ($shortcut.Arguments -eq ('"' + (Join-Path $launcherRoot 'launch-store.vbs') + '"') -or $shortcut.Arguments.Contains((Join-Path $launcherRoot 'launch-store.ps1'))) { Remove-Item -LiteralPath $shortcutPath }
         }
     }
     Write-Output 'MiniSearch removed. Other extensions and settings were preserved.'
@@ -80,7 +80,7 @@ try {
         Invoke-WebRequest -UseBasicParsing -Uri $releaseURL -OutFile $tempFile
     }
     $content = Get-Content -LiteralPath $tempFile -Raw
-    if ($content -notmatch 'MiniSearch v0\.2\.1' -or $content -notmatch 'documentPictureInPicture') {
+    if ($content -notmatch 'MiniSearch v0\.2\.2' -or $content -notmatch 'documentPictureInPicture') {
         throw 'Downloaded file did not look like the expected MiniSearch release.'
     }
     if (Test-Path -LiteralPath $destination) { Copy-Item -LiteralPath $destination -Destination "$destination.previous" -Force }
@@ -110,7 +110,7 @@ if ($storePackage -and -not $SkipApply) {
     [System.IO.File]::WriteAllText($indexPath, $indexHTML)
     $launcherRoot = Join-Path $env:LOCALAPPDATA 'SpotifyMiniSearch'
     New-Item -ItemType Directory -Path $launcherRoot -Force | Out-Null
-    foreach ($file in @('launch-store.ps1', 'launch-store.vbs')) {
+    foreach ($file in @('launch-store.ps1')) {
         $bundled = Join-Path $PSScriptRoot $file
         $installedLauncher = Join-Path $launcherRoot $file
         if (Test-Path -LiteralPath $bundled) { Copy-Item -LiteralPath $bundled -Destination $installedLauncher -Force }
@@ -120,8 +120,9 @@ if ($storePackage -and -not $SkipApply) {
     if (-not $NoShortcut) {
         $shortcutPath = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Spotify MiniSearch.lnk'
         $shortcut = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcutPath)
-        $shortcut.TargetPath = Join-Path $env:WINDIR 'System32\wscript.exe'
-        $shortcut.Arguments = '"' + (Join-Path $launcherRoot 'launch-store.vbs') + '"'
+        $shortcut.TargetPath = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
+        $shortcut.Arguments = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "' + (Join-Path $launcherRoot 'launch-store.ps1') + '"'
+        $shortcut.WindowStyle = 7
         $shortcut.WorkingDirectory = $launcherRoot
         $shortcut.IconLocation = (Join-Path $storePackage.InstallLocation 'Spotify.exe') + ',0'
         $shortcut.Description = 'Spotify with the searchable MiniSearch player (Microsoft Store edition)'

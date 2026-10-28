@@ -1,6 +1,6 @@
 {
   "name": "spotify-minisearch",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "A searchable, always-on-top Spotify mini player powered by Spicetify.",
   "license": "MIT",

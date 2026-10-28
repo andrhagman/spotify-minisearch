@@ -56,6 +56,19 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.equal(await page.evaluate(() => mockCalls.seek.at(-1)), 111500);
       assert.equal(await page.evaluate(() => mockCalls.volume.at(-1)), .3);
     });
+    await t.test('dragging the volume slider changes volume without moving the window', async () => {
+      await page.evaluate(() => { window.volumeDragMoves = []; window.moveTo = (...args) => window.volumeDragMoves.push(args); });
+      assert.equal(await page.locator('#volume-popup').evaluate(el => getComputedStyle(el).getPropertyValue('-webkit-app-region')), 'no-drag');
+      assert.equal(await page.locator('#volume').evaluate(el => getComputedStyle(el).getPropertyValue('-webkit-app-region')), 'no-drag');
+      const slider = await page.locator('#volume').boundingBox();
+      const before = await page.evaluate(() => mockCalls.volume.length);
+      await page.mouse.move(slider.x + slider.width * .2, slider.y + slider.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(slider.x + slider.width * .8, slider.y + slider.height / 2, { steps: 6 });
+      await page.mouse.up();
+      assert.ok(await page.evaluate(() => mockCalls.volume.length) > before);
+      assert.deepEqual(await page.evaluate(() => window.volumeDragMoves), []);
+    });
     await t.test('keyboard navigates results and Ctrl+F returns to search', async () => {
       await query.focus(); await query.press('ArrowDown');
       assert.equal(await page.evaluate(() => document.activeElement.className), 'result-play');
