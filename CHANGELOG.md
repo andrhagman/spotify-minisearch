@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1 — 2026-10-28
+
+- Ctrl+Shift+K works while Spotify's search or another text field has focus.
+- Register the shortcut on window capture before Spotify's document handlers.
+- Toolbar initialization failures no longer prevent the shortcut from registering.
+- The same shortcut closes MiniSearch when its own search field has focus.
+- Wait for playback state rather than closing the mini player if playback APIs are still initializing.
+
 ## 0.2.0 — 2026-10-28
 
 - Compact 320×164 player with artwork and song details above a single row of controls.

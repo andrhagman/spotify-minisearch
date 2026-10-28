@@ -38,7 +38,7 @@ The shortcut uses a small hidden PowerShell launcher, with no background polling
 
 ### Manual install (regular desktop)
 
-Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.2.0/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
+Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.2.1/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
 
 ```powershell
 spicetify config extensions minisearch.js
@@ -57,7 +57,7 @@ For the Store edition, use the release ZIP installer so the writable asset direc
 
 | Shortcut | Action |
 | --- | --- |
-| **Ctrl+Shift+K** | Open/close MiniSearch while Spotify is focused, outside text fields |
+| **Ctrl+Shift+K** | Open/close MiniSearch while Spotify is focused, including search fields |
 | **Ctrl+F** | Focus the mini player's search field |
 | **Down / Up** | Navigate result Play buttons |
 | **Tab / Shift+Tab** | Navigate all controls, including queue buttons |

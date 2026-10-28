@@ -153,7 +153,24 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.equal(await page.evaluate(() => window.nativeKeyCount), 0);
       await page.evaluate(() => { const input = document.createElement('input'); document.body.append(input); input.focus(); });
       await page.keyboard.press('Control+Shift+k');
-      assert.equal(await page.evaluate(() => window.nativeKeyCount), 1);
+      assert.equal(await page.evaluate(() => window.nativeKeyCount), 0);
+      assert.match(await page.evaluate(() => mockCalls.notification), /picture-in-picture support/);
+    });
+    await t.test('shortcut survives toolbar initialization failures', async () => {
+      const pattern = '**/tests/mock-spotify.js';
+      const handler = route => route.fulfill({
+        contentType: 'text/javascript',
+        body: fs.readFileSync(path.join(__dirname, 'mock-spotify.js'), 'utf8') + `
+          Spicetify.Playbar.Button = class { constructor() { throw new Error('Toolbar not ready'); } };
+          Spicetify.Topbar = { Button: class { constructor() { throw new Error('Toolbar not ready'); } } };
+          Object.defineProperty(window, 'documentPictureInPicture', { value: undefined, configurable: true });`,
+      });
+      await page.route(pattern, handler);
+      await page.goto(base + '/launcher');
+      assert.equal(await page.locator('#launcher').count(), 0);
+      await page.keyboard.press('Control+Shift+k');
+      assert.match(await page.evaluate(() => mockCalls.notification), /picture-in-picture support/);
+      await page.unroute(pattern, handler);
     });
     await t.test('real Chromium picture-in-picture window opens and can reopen', async () => {
       // Fixed Playwright viewports are inherited by PiP and hide real native
@@ -175,7 +192,7 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       await page.waitForFunction(height => documentPictureInPicture.window.innerHeight > height, compactHeight, { timeout: 5000 });
       await pipPage.getByRole('button', { name: 'Clear search' }).click();
       await page.waitForFunction(height => documentPictureInPicture.window.innerHeight <= height + 1, compactHeight, { timeout: 5000 });
-      await page.evaluate(() => documentPictureInPicture.window.close());
+      await pipPage.keyboard.press('Control+Shift+k').catch(error => { if (!pipPage.isClosed()) throw error; });
       await page.waitForFunction(() => !documentPictureInPicture.window);
       assert.deepEqual(await page.evaluate(() => Object.values(mockCalls.listeners)), [0, 0, 0]);
       await page.locator('#launcher').click();

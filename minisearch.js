@@ -1,4 +1,4 @@
-/* MiniSearch v0.2.0 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.2.1 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.2.0";
+  const VERSION = "0.2.1";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const ICONS = {
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
@@ -252,6 +252,7 @@
     }
     function sync() {
       if (disposed) return;
+      try {
       const player = sp.Player;
       const item = player.data?.item;
       const metadata = item?.metadata || {};
@@ -287,6 +288,7 @@
       $("seek").disabled = !duration;
       $("elapsed").textContent = formatTime(progress); $("duration").textContent = formatTime(duration);
       if (doc.activeElement !== $("volume")) $("volume").value = String(Math.round((Number(player.getVolume()) || 0) * 100));
+      } catch { status("Waiting for Spotify playback…"); }
     }
     const header = app.querySelector(".bar");
     // Native app-region dragging handles supported CEF builds. On other builds,
@@ -338,6 +340,7 @@
       }
     });
     on(doc, "keydown", e => {
+      if (e.ctrlKey && e.shiftKey && (e.code === "KeyK" || e.key.toLowerCase() === "k")) { e.preventDefault(); e.stopImmediatePropagation(); win.close(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") { e.preventDefault(); $("query").focus(); $("query").select(); }
       if (e.key === "Escape") { e.preventDefault(); if ($("query").value) { $("query").value = ""; runSearch(); $("query").focus(); } else win.close(); }
       if (e.key === "ArrowDown" && doc.activeElement === $("query")) { const first = app.querySelector(".result-play"); if (first) { e.preventDefault(); first.focus(); } return; }
@@ -366,7 +369,7 @@
     let pip = null, controller = null, opening = false, attempts = 0;
     function ready() {
       const sp = host.Spicetify;
-      if (!sp?.Player?.addEventListener || !sp?.CosmosAsync || !sp?.Playbar?.Button || !sp?.addToQueue) {
+      if (!sp?.Player?.addEventListener || !sp?.CosmosAsync || !sp?.addToQueue) {
         if (++attempts < 1200) host.setTimeout(ready, 100);
         else { host.__miniSearchLoaded = false; console.warn("[MiniSearch] Spicetify did not become ready. Update Spicetify and restart Spotify."); }
         return;
@@ -392,14 +395,18 @@
           sp.showNotification("MiniSearch couldn’t open. Close other mini players and try again.", true);
         } finally { opening = false; }
       }
-      const svg = icon("search");
-      new sp.Playbar.Button("MiniSearch — search in a floating player", svg, toggle);
-      if (sp.Topbar?.Button) new sp.Topbar.Button("MiniSearch", svg, toggle, false, true);
-      host.document.addEventListener("keydown", e => {
-        if (e.ctrlKey && e.shiftKey && e.code === "KeyK" && !e.repeat && !e.target?.closest?.('input,textarea,[contenteditable="true"]')) {
+      // Window capture runs before Spotify's document shortcut handlers. The
+      // modifier chord is intentional even when a search/edit field has focus.
+      host.addEventListener("keydown", e => {
+        if (e.ctrlKey && e.shiftKey && (e.code === "KeyK" || e.key?.toLowerCase() === "k") && !e.repeat && !e.isComposing) {
           e.preventDefault(); e.stopImmediatePropagation(); toggle();
         }
       }, true);
+      const svg = icon("search");
+      try { if (sp.Playbar?.Button) new sp.Playbar.Button("MiniSearch — search in a floating player", svg, toggle); }
+      catch { console.warn("[MiniSearch] Playback-bar button unavailable; keyboard shortcut remains active."); }
+      try { if (sp.Topbar?.Button) new sp.Topbar.Button("MiniSearch", svg, toggle, false, true); }
+      catch { console.warn("[MiniSearch] Top-bar button unavailable; keyboard shortcut remains active."); }
       // Keep Spotify's original mini player available; our search icon opens MiniSearch.
       host.addEventListener("pagehide", () => { controller?.dispose(); if (pip && !pip.closed) pip.close(); }, { once: true });
     }
