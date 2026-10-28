@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.12 — 2026-10-28
+
+- Repair the measured Windows PiP startup frame adjustments without constraining ordinary manual resizing.
+- Avoid sizing from the opener's temporarily inherited outer dimensions during creation.
+- Preserve saved client dimensions and position through the delayed native frame update.
+- Verify startup, pause/resume, manual sizing, and reopening in the real Spotify desktop client.
+
 ## 0.3.11 — 2026-10-28
 
 - Keep the play/pause icon stable during progress updates so clicks are not cancelled.

@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.11 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.12 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.11";
+  const VERSION = "0.3.12";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -46,6 +46,18 @@
       options.cefOptions = { position: { x, y }, resizable: true };
     }
     return options;
+  }
+  function nativeFrameResize(previous, next, age) {
+    if (age < 0 || age > 8000) return false;
+    const dx = next.width - previous.width, dy = next.height - previous.height;
+    // Windows' hidden PiP frame adds its borders a second time at startup.
+    const border = next.outerWidth - next.width - 2;
+    if (border < 4 || ![border, border * 2].some(value => Math.abs(dx - value) <= 2)) return false;
+    if (age < 1500) return [21, 42].some(value => Math.abs(dy - value) <= 2);
+    // Unlike dragging a top-left corner, the native jump moves the origin
+    // without a corresponding inverse height change (often imposing 274px).
+    return Math.abs(next.x - previous.x + dx) <= 2 && next.y <= previous.y + 1 &&
+      Math.abs(dy + next.y - previous.y) > 3;
   }
   const ICONS = {
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
@@ -217,6 +229,26 @@
     const ignoreForeignResize = () => {};
     const resizeDescriptor = Object.getOwnPropertyDescriptor(win, "resizeTo");
     if (resizeWindow) Object.defineProperty(win, "resizeTo", { configurable: true, get: () => ignoreForeignResize, set: () => {} });
+    const bounds = () => ({ width: win.innerWidth, height: win.innerHeight, outerWidth: win.outerWidth, x: win.screenX, y: win.screenY });
+    const startup = resizeWindow && sp.Platform?.container === "Desktop" && sp.Platform?.operatingSystem === "Windows"
+      ? { time: Date.now(), previous: bounds(), initial: { ...bounds(), width: preferred.width, height: preferred.compactHeight }, firstFrame: false, manualResize: false, repaired: false } : null;
+    let startupTimer = null, startupSaveTimer = null;
+    function restoreStartupBounds(target) {
+      if (disposed || win.closed) return;
+      pendingHeight = target.height;
+      preferred[expanded ? "expandedHeight" : "compactHeight"] = target.height;
+      try { resizeTo(target.width + Math.max(0, win.outerWidth - win.innerWidth), target.height + Math.max(0, win.outerHeight - win.innerHeight)); }
+      catch { pendingHeight = null; }
+      try { win.moveTo(target.x, target.y); } catch {}
+      // CEF applies moveTo asynchronously after its resize event. Persist the
+      // settled position, not the intermediate native frame coordinates.
+      win.clearTimeout(startupSaveTimer);
+      startupSaveTimer = win.setTimeout(() => {
+        if (disposed || win.closed) return;
+        startup.previous = bounds();
+        saveBounds();
+      }, 100);
+    }
     function saveBounds() {
       if (!onBoundsChange || win.innerWidth <= 0 || win.innerHeight <= 0) return;
       onBoundsChange({ ...preferred, width: win.innerWidth, x: win.screenX, y: win.screenY });
@@ -362,6 +394,31 @@
     }
     const header = app.querySelector(".bar");
     on(win, "resize", () => {
+      if (startup) {
+        const next = bounds(), age = Date.now() - startup.time;
+        const previous = startup.previous;
+        startup.previous = next;
+        if (!startup.repaired && nativeFrameResize(previous, next, age)) {
+          if (age < 1500) {
+            if (!startup.firstFrame && !startup.manualResize) {
+              startup.firstFrame = true;
+              const target = {
+                ...startup.initial,
+                x: Number.isFinite(preferred.x) ? preferred.x : previous.x,
+                y: Number.isFinite(preferred.y) ? preferred.y : previous.y,
+              };
+              startupTimer = win.setTimeout(() => restoreStartupBounds(target), 0);
+            }
+            return;
+          }
+          startup.repaired = true;
+          // One native startup jump, not a general resize constraint. Never
+          // persist the expanded native frame as the user's compact size.
+          startupTimer = win.setTimeout(() => restoreStartupBounds(previous), 0);
+          return;
+        }
+        if (age < 1500 && (next.width !== previous.width || next.height !== previous.height) && pendingHeight === null) startup.manualResize = true;
+      }
       // Never resize in response to a resize event. The native frame owns the
       // user's drag; responding with resizeTo fights it and causes flicker.
       // Match the requested height instead of ignoring all resize events for a
@@ -463,6 +520,8 @@
       if (disposed) return;
       saveBounds();
       disposed = true; ++requestID; ++actionID; win.clearTimeout(timer);
+      win.clearTimeout(startupTimer);
+      win.clearTimeout(startupSaveTimer);
       if (resizeWindow && win.resizeTo === ignoreForeignResize) {
         if (resizeDescriptor) Object.defineProperty(win, "resizeTo", resizeDescriptor);
         else delete win.resizeTo;
@@ -470,7 +529,9 @@
       for (const remove of removers.splice(0)) remove();
     }
     on(win, "pagehide", dispose);
-    sync(); runSearch(); $("query").focus(); sizeWindow();
+    // requestWindow already applies the saved content size. On Windows its
+    // outer dimensions briefly belong to the opener, so don't resize here.
+    sync(); runSearch(); $("query").focus();
     return { dispose, search: runSearch };
   }
 
@@ -556,5 +617,5 @@
     }
     ready();
   }
-  return { VERSION, GEOMETRY_KEY, normalizeGeometry, readGeometry, writeGeometry, windowOptions, formatTime, imageURL, normalizeTrack, parseSearch, searchTracks, mount, start };
+  return { VERSION, GEOMETRY_KEY, normalizeGeometry, readGeometry, writeGeometry, windowOptions, nativeFrameResize, formatTime, imageURL, normalizeTrack, parseSearch, searchTracks, mount, start };
 });

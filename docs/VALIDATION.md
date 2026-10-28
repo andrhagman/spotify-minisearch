@@ -1,4 +1,10 @@
-# Validation — v0.3.8
+# Validation — v0.3.12
+
+## Live Windows startup regression
+
+On 2026-10-28 the native Spotify client was traced through window creation and its delayed frame update. It temporarily reported the opener's outer dimensions, added frame margins, then enlarged the client after about four seconds without a JavaScript resize call. The repair identifies those startup frame changes, restores the saved client bounds, and does not impose a general resize constraint.
+
+Live verification held a 312×148 client through startup, toggled playback using MiniSearch, changed the native frame through three sizes to 300×144, then closed and reopened it and checked that the saved size and position remained stable. Temporary local diagnostics were used for this verification; the extension does not enable a debugging port.
 
 ## Regular Windows desktop and resize verification
 

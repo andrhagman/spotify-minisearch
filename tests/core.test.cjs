@@ -27,6 +27,19 @@ test('small manual sizes are restored without the old 164px minimum', () => {
   assert.equal(geometry.compactHeight, 132);
   assert.equal(mini.windowOptions(geometry).height, 132);
 });
+
+test('recognizes the live Windows startup frame changes without treating manual drags as native jumps', () => {
+  const first = { width: 312, height: 148, outerWidth: 1600, x: 480, y: 270 };
+  const framed = { width: 326, height: 169, outerWidth: 342, x: 1999, y: 494 };
+  assert.equal(mini.nativeFrameResize(first, framed, 100), true);
+  const compact = { width: 312, height: 148, outerWidth: 328, x: 1999, y: 494 };
+  const jump = { width: 326, height: 274, outerWidth: 342, x: 1985, y: 473 };
+  assert.equal(mini.nativeFrameResize(compact, jump, 4160), true);
+  assert.equal(mini.nativeFrameResize(compact, { ...jump, y: 424 }, 4160), true, 'Work-area repositioning changes the vertical offset');
+  assert.equal(mini.nativeFrameResize(compact, { ...jump, x: 1999, y: 494 }, 4160), false, 'Bottom-right drag');
+  assert.equal(mini.nativeFrameResize(compact, { ...jump, height: 169 }, 4160), false, 'Top-left drag');
+  assert.equal(mini.nativeFrameResize(compact, jump, 10000), false, 'No correction after startup');
+});
 test('a disconnected secondary screen cannot strand the saved window', () => {
   const options = mini.windowOptions({ x: -380, y: 1700, width: 480, compactHeight: 242 }, { isExtended: false, availLeft: 0, availTop: 0, availWidth: 1920, availHeight: 1080 });
   assert.deepEqual(options.cefOptions.position, { x: 0, y: 838 });
