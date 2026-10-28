@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 — 2026-10-28
+
+- Compact 320×164 player with artwork and song details above a single row of controls.
+- Search results dropdown opens only when songs are found; clearing search collapses it.
+- Window grows for results and shrinks back to the compact player.
+- Volume popover, shuffle, repeat, Liked Songs and copy-song-link buttons.
+- Capture Ctrl+Shift+K before Spotify's built-in shortcut handler.
+- Header movement fallback and versioned extension loading for Store assets.
+
 ## 0.1.1 — 2026-10-28
 
 - Make the MiniSearch header a native window drag area so the floating player can be moved.

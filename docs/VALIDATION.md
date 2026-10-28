@@ -16,9 +16,11 @@ The live test revealed that the client exposes `searchModalResults`, not `search
 
 ## Automated verification
 
+The v0.2.0 compact layout, dropdown visibility, expanded controls and shortcut capture were tested in an isolated browser with simulated Spotify APIs. These changes were made without controlling the user's open desktop session. Live header dragging remains unverified.
+
 - Unit tests: parsing REST/GraphQL responses, provider fallback, unavailable tracks, encoding, image protocols and duration formatting.
 - Browser UI tests in isolated Microsoft Edge with simulated Spotify APIs: search, play, queue, controls, keyboard navigation, stale requests, clear while searching, failure states, safe metadata rendering, responsive layout and cleanup.
-- Real Chromium PiP open, close and reopen with simulated Spotify APIs.
+- Real Chromium PiP open, expand for search results, collapse after clearing, close and reopen with simulated Spotify APIs.
 - Windows installer tests against an isolated fake installation; other extensions preserved.
 - PowerShell syntax validation.
 - Preview inspected at 360×580 and tested at 280×400.

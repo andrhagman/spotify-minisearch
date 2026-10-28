@@ -23,6 +23,14 @@ try {
         foreach ($app in @('xpui', 'login')) {
             Copy-Item -LiteralPath (Join-Path $sourceApps $app) -Destination $appsPath -Recurse -Force
         }
+        $extensionPath = Join-Path $appsPath 'xpui\extensions\minisearch.js'
+        $versionMatch = [regex]::Match((Get-Content -LiteralPath $extensionPath -TotalCount 1), 'MiniSearch v([0-9.]+)')
+        if ($versionMatch.Success) {
+            $indexPath = Join-Path $appsPath 'xpui\index.html'
+            $indexHTML = Get-Content -LiteralPath $indexPath -Raw
+            $indexHTML = [regex]::Replace($indexHTML, 'extensions/minisearch\.js(?:\?[^''"]*)?', ('extensions/minisearch.js?v=' + $versionMatch.Groups[1].Value))
+            [System.IO.File]::WriteAllText($indexPath, $indexHTML)
+        }
         Set-Content -LiteralPath $versionFile -Value ([string]$package.Version)
     }
     # An existing unmodified Spotify process ignores the new app-directory argument.

@@ -6,7 +6,9 @@ A lightweight [Spicetify](https://spicetify.app/) extension for Spotify desktop:
 
 **Works with the Microsoft Store edition on Windows.** Tested with Spotify **1.3.6.1921** and Spicetify **2.46.4**, including real catalog search, playback, and queueing. The Windows installer creates a separate **Spotify MiniSearch** shortcut; your Store installation stays installed.
 
-<img src="docs/preview.png" width="360" alt="MiniSearch playback controls, search field, and songs with queue buttons">
+<img src="docs/compact.png" width="320" alt="Compact MiniSearch player with artwork, playback controls and search">
+
+<details><summary>With search results</summary><img src="docs/preview.png" width="320" alt="Search results dropdown below the compact player"></details>
 
 *Illustrative preview uses fictional music and simulated responses.*
 
@@ -36,7 +38,7 @@ The shortcut uses a small hidden PowerShell launcher, with no background polling
 
 ### Manual install (regular desktop)
 
-Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.1.1/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
+Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.2.0/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
 
 ```powershell
 spicetify config extensions minisearch.js
@@ -49,7 +51,8 @@ For the Store edition, use the release ZIP installer so the writable asset direc
 
 - Type a **song title or artist**. Search starts after a short pause; **Enter** searches immediately.
 - Click a result to **play it now**. Click **+** to **add it to your queue**.
-- Playback controls, seeking, and volume stay above the results.
+- The player opens at **320×164**. Results appear in a dropdown only when songs are found; clearing search collapses the window.
+- Playback controls, a volume popover, shuffle, repeat, Liked Songs, and copy-song-link stay above search.
 - Drag the MiniSearch header to move the window. Resize using the native frame; results scroll inside it.
 
 | Shortcut | Action |

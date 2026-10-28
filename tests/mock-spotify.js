@@ -15,7 +15,7 @@
   }));
   const calls = window.mockCalls = { searches: [], plays: [], queued: [], seek: [], volume: [], listeners: {} };
   const listeners = new Map();
-  let playing = true, volume = .55, position = 73000;
+  let playing = true, volume = .55, position = 73000, shuffle = false, repeat = 0, liked = false;
   function emit(event) { for (const fn of listeners.get(event) || []) fn(); }
   window.Spicetify = {
     Player: {
@@ -25,6 +25,9 @@
       back() { calls.back = (calls.back || 0) + 1; }, next() { calls.next = (calls.next || 0) + 1; },
       seek(value) { calls.seek.push(value); position = value; emit('onprogress'); },
       setVolume(value) { calls.volume.push(value); volume = value; },
+      getShuffle: () => shuffle, setShuffle(value) { shuffle = value; },
+      getRepeat: () => repeat, setRepeat(value) { repeat = value; },
+      getHeart: () => liked, toggleHeart() { liked = !liked; },
       async playUri(uri) { if (window.failPlayback) throw new Error('Playback denied'); calls.plays.push(uri); this.data.item = { ...tracks.find(t => t.uri === uri), metadata: {} }; playing = true; emit('songchange'); },
       addEventListener(event, fn) { if (!listeners.has(event)) listeners.set(event, new Set()); listeners.get(event).add(fn); calls.listeners[event] = listeners.get(event).size; },
       removeEventListener(event, fn) { listeners.get(event)?.delete(fn); calls.listeners[event] = listeners.get(event)?.size || 0; },
@@ -39,6 +42,7 @@
       return { tracks: { items: tracks } };
     } },
     async addToQueue(items) { if (window.failQueue) throw new Error('Queue denied'); calls.queued.push(...items); },
+    Platform: { ClipboardAPI: { async copy(text) { calls.clipboard = text; } } },
     Playbar: { Button: class {
       constructor(label, icon, callback) { const button = document.createElement('button'); button.textContent = label; button.onclick = callback; button.id = 'launcher'; document.body.append(button); calls.launchers = (calls.launchers || 0) + 1; }
     } }, showNotification(message) { calls.notification = message; },

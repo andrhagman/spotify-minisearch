@@ -1,10 +1,10 @@
-# MiniSearch v0.1.1 - run from a normal (non-administrator) PowerShell session.
+# MiniSearch v0.2.0 - run from a normal (non-administrator) PowerShell session.
 [CmdletBinding()]
 param([switch]$Uninstall, [switch]$SkipApply, [switch]$NoShortcut)
 
 $ErrorActionPreference = 'Stop'
 $extensionName = 'minisearch.js'
-$releaseVersion = 'v0.1.1'
+$releaseVersion = 'v0.2.0'
 $cli = Get-Command spicetify -ErrorAction SilentlyContinue
 if (-not $cli) {
     $knownCLI = Join-Path $env:LOCALAPPDATA 'spicetify\spicetify.exe'
@@ -80,7 +80,7 @@ try {
         Invoke-WebRequest -UseBasicParsing -Uri $releaseURL -OutFile $tempFile
     }
     $content = Get-Content -LiteralPath $tempFile -Raw
-    if ($content -notmatch 'MiniSearch v0\.1\.1' -or $content -notmatch 'documentPictureInPicture') {
+    if ($content -notmatch 'MiniSearch v0\.2\.0' -or $content -notmatch 'documentPictureInPicture') {
         throw 'Downloaded file did not look like the expected MiniSearch release.'
     }
     if (Test-Path -LiteralPath $destination) { Copy-Item -LiteralPath $destination -Destination "$destination.previous" -Force }
@@ -104,6 +104,10 @@ if ($storePackage -and -not $SkipApply) {
     foreach ($app in @('xpui', 'login')) {
         Copy-Item -LiteralPath (Join-Path $sourceApps $app) -Destination $appsPath -Recurse -Force
     }
+    $indexPath = Join-Path $appsPath 'xpui\index.html'
+    $indexHTML = Get-Content -LiteralPath $indexPath -Raw
+    $indexHTML = [regex]::Replace($indexHTML, 'extensions/minisearch\.js(?:\?[^''"]*)?', "extensions/minisearch.js?v=$releaseVersion")
+    [System.IO.File]::WriteAllText($indexPath, $indexHTML)
     $launcherRoot = Join-Path $env:LOCALAPPDATA 'SpotifyMiniSearch'
     New-Item -ItemType Directory -Path $launcherRoot -Force | Out-Null
     foreach ($file in @('launch-store.ps1', 'launch-store.vbs')) {

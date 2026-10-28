@@ -10,7 +10,7 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ headless: true, ...(process.env.MINISEARCH_BROWSER_CHANNEL ? { channel: process.env.MINISEARCH_BROWSER_CHANNEL } : {}) });
   try {
-    const page = await browser.newPage({ viewport: { width: 360, height: 580 }, deviceScaleFactor: 1 });
+    const page = await browser.newPage({ viewport: { width: 320, height: 420 }, deviceScaleFactor: 1 });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.route('https://i.scdn.co/**', route => {
@@ -31,6 +31,10 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
     await t.test('initial state, artwork, pause, next and previous controls', async () => {
       assert.equal(await page.locator('#title').textContent(), 'Midnight Signal');
       assert.equal(await page.locator('#art-placeholder').isVisible(), false);
+      assert.equal(await page.locator('#results').isVisible(), false);
+      await page.setViewportSize({ width: 320, height: 164 });
+      await page.screenshot({ path: path.join(__dirname, '../docs/compact.png') });
+      await page.setViewportSize({ width: 320, height: 420 });
       await page.getByRole('button', { name: 'Pause', exact: true }).click();
       assert.equal(await page.getByRole('button', { name: 'Play', exact: true }).count(), 1);
       await page.getByRole('button', { name: 'Next track' }).click();
@@ -47,6 +51,7 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
     });
     await t.test('seek and volume send correctly scaled values', async () => {
       await page.locator('#seek').fill('500'); await page.locator('#seek').dispatchEvent('change');
+      await page.getByRole('button', { name: 'Show volume' }).click();
       await page.locator('#volume').fill('30');
       assert.equal(await page.evaluate(() => mockCalls.seek.at(-1)), 111500);
       assert.equal(await page.evaluate(() => mockCalls.volume.at(-1)), .3);
@@ -57,6 +62,19 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       await page.keyboard.press('ArrowDown');
       assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-label')), 'Play Midnight City Lights by Northbound');
       await page.keyboard.press('Control+f'); assert.equal(await query.evaluate(el => el === document.activeElement), true);
+    });
+    await t.test('compact controls work and results reopen when search regains focus', async () => {
+      await page.getByRole('button', { name: 'Shuffle', exact: true }).click();
+      assert.equal(await page.locator('#shuffle').getAttribute('aria-pressed'), 'true');
+      assert.equal(await page.locator('#results').isVisible(), false);
+      await query.focus(); assert.equal(await page.locator('#results').isVisible(), true);
+      await page.getByRole('button', { name: 'Repeat off', exact: true }).click();
+      assert.equal(await page.locator('#repeat').getAttribute('aria-label'), 'Repeat all');
+      await page.getByRole('button', { name: 'Save to Liked Songs', exact: true }).click();
+      assert.equal(await page.locator('#like').getAttribute('aria-label'), 'Remove from Liked Songs');
+      await page.getByRole('button', { name: 'Copy song link', exact: true }).click();
+      assert.equal(await page.evaluate(() => mockCalls.clipboard), 'https://open.spotify.com/track/0000000000000000000002');
+      await query.focus();
     });
     await t.test('stale searches cannot overwrite a newer query', async () => {
       await search('slow');
@@ -79,11 +97,13 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       await page.waitForTimeout(1000);
       assert.equal(await query.inputValue(), '');
       assert.equal(await rows.count(), 0);
+      assert.equal(await page.locator('#results').isVisible(), false);
       assert.equal(await page.locator('#results').getAttribute('aria-busy'), 'false');
     });
     await t.test('empty and failed searches provide recovery states', async () => {
-      await search('empty'); await page.getByText('No songs found', { exact: true }).waitFor();
-      await search('offline'); await page.getByText('Search is unavailable', { exact: true }).waitFor();
+      await search('empty'); await page.getByText('No songs found. Try another title or artist.', { exact: true }).waitFor();
+      assert.equal(await page.locator('#results').isVisible(), false);
+      await search('offline'); await page.getByText('Search is unavailable. Press Enter to retry.', { exact: true }).waitFor();
       await search('midnight'); await waitRows(6);
     });
     await t.test('API errors do not produce false playback or queue success', async () => {
@@ -107,7 +127,7 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       assert.equal(await query.isVisible(), true);
       assert.ok(await page.locator('#results').evaluate(el => el.clientHeight) > 60);
-      await page.setViewportSize({ width: 360, height: 580 });
+      await page.setViewportSize({ width: 320, height: 420 });
       await page.screenshot({ path: path.join(__dirname, '../docs/preview.png') });
     });
     await t.test('closing the player removes subscriptions and invalidates searches', async () => {
@@ -124,19 +144,44 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       await page.locator('#launcher').click();
       assert.match(await page.evaluate(() => mockCalls.notification), /picture-in-picture support/);
     });
+    await t.test('shortcut prevents the native mini-player handler from also running', async () => {
+      await page.evaluate(() => {
+        window.nativeKeyCount = 0;
+        document.addEventListener('keydown', e => { if (e.ctrlKey && e.shiftKey && e.code === 'KeyK') window.nativeKeyCount++; });
+      });
+      await page.keyboard.press('Control+Shift+k');
+      assert.equal(await page.evaluate(() => window.nativeKeyCount), 0);
+      await page.evaluate(() => { const input = document.createElement('input'); document.body.append(input); input.focus(); });
+      await page.keyboard.press('Control+Shift+k');
+      assert.equal(await page.evaluate(() => window.nativeKeyCount), 1);
+    });
     await t.test('real Chromium picture-in-picture window opens and can reopen', async () => {
+      // Fixed Playwright viewports are inherited by PiP and hide real native
+      // content resizing. Use a normal window for this geometry check.
+      const page = await browser.newPage({ viewport: null });
+      page.on('pageerror', error => errors.push(error.message));
+      await page.route('https://i.scdn.co/**', route => route.fulfill({ status: 204 }));
       await page.goto(base + '/launcher');
       const supported = await page.evaluate(() => Boolean(window.documentPictureInPicture?.requestWindow));
       if (!supported) { t.diagnostic('Real PiP unsupported in this browser; mount and lifecycle covered separately.'); return; }
       await page.locator('#launcher').click();
       await page.waitForFunction(() => documentPictureInPicture.window?.document.getElementById('query'));
       assert.equal(await page.evaluate(() => documentPictureInPicture.window.document.getElementById('title').textContent), 'Midnight Signal');
+      const compactHeight = await page.evaluate(() => documentPictureInPicture.window.innerHeight);
+      const pipPage = page.context().pages().find(p => p !== page && p.url() === 'about:blank');
+      assert.ok(pipPage, 'Picture-in-picture page is exposed for real keyboard input');
+      await pipPage.getByRole('textbox', { name: 'Search songs or artists' }).pressSequentially('midnight');
+      await page.waitForFunction(() => documentPictureInPicture.window.document.querySelectorAll('.result').length === 6);
+      await page.waitForFunction(height => documentPictureInPicture.window.innerHeight > height, compactHeight, { timeout: 5000 });
+      await pipPage.getByRole('button', { name: 'Clear search' }).click();
+      await page.waitForFunction(height => documentPictureInPicture.window.innerHeight <= height + 1, compactHeight, { timeout: 5000 });
       await page.evaluate(() => documentPictureInPicture.window.close());
       await page.waitForFunction(() => !documentPictureInPicture.window);
       assert.deepEqual(await page.evaluate(() => Object.values(mockCalls.listeners)), [0, 0, 0]);
       await page.locator('#launcher').click();
       await page.waitForFunction(() => documentPictureInPicture.window?.document.getElementById('query'));
       await page.evaluate(() => documentPictureInPicture.window.close());
+      await page.close();
     });
     assert.deepEqual(errors, [], 'No unhandled browser errors');
   } finally {
