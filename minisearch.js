@@ -1,4 +1,4 @@
-/* MiniSearch v0.1.0 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.1.1 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.1.0";
+  const VERSION = "0.1.1";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const ICONS = {
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
@@ -92,6 +92,8 @@
     button{border:0;background:none}button:hover{background:#ffffff13}button:focus-visible,input:focus-visible{outline:2px solid #b8f8cb;outline-offset:3px}
     .app{height:100%;display:flex;flex-direction:column;background:radial-gradient(ellipse at 0 0,#29453755,transparent 65%),#121513}
     .bar{display:flex;align-items:center;gap:8px;padding:13px 16px 8px;flex-shrink:0}
+    .bar,.bar *{-webkit-app-region:drag;app-region:drag;user-select:none}
+    .bar button,.bar button *{-webkit-app-region:no-drag;app-region:no-drag}
     .brand-icon{color:#9be6b1;display:flex}.brand{font-size:12px;font-weight:650;letter-spacing:.04em}.version{font-size:10px;color:#9ca89f;margin-left:auto}
     .icon-button{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;flex-shrink:0}
     .now{display:flex;align-items:center;gap:14px;padding:12px 18px}.art{width:78px;height:78px;flex-shrink:0;border-radius:9px;background:#25352c;object-fit:cover;box-shadow:0 5px 16px #0004}
@@ -134,7 +136,7 @@
     app.className = "app";
     // This template contains only our static markup. Spotify metadata always uses textContent.
     app.innerHTML = `
-      <header class="bar"><span class="brand-icon">${icon("search")}</span><span class="brand">MiniSearch</span><span class="version">v${VERSION}</span><button class="icon-button" id="close" aria-label="Close mini player" title="Close">${icon("close")}</button></header>
+      <header class="bar" title="Drag here to move the mini player"><span class="brand-icon">${icon("search")}</span><span class="brand">MiniSearch</span><span class="version">v${VERSION}</span><button class="icon-button" id="close" aria-label="Close mini player" title="Close">${icon("close")}</button></header>
       <section class="now" aria-label="Now playing"><div id="art-placeholder" class="art placeholder">${icon("music")}</div><img id="art" class="art" alt="" hidden><div class="track-info"><p class="eyebrow">NOW PLAYING</p><h1 class="title" id="title">Nothing playing yet</h1><p class="artist" id="artist">Find your next song below</p></div></section>
       <div class="controls" aria-label="Playback controls"><button class="icon-button" id="previous" aria-label="Previous track" title="Previous">${icon("previous")}</button><button class="icon-button primary" id="play-pause" aria-label="Play" title="Play">${icon("play")}</button><button class="icon-button" id="next" aria-label="Next track" title="Next">${icon("next")}</button></div>
       <div class="timeline"><input id="seek" type="range" aria-label="Seek position" min="0" max="1000" value="0" step="1"><div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div></div>

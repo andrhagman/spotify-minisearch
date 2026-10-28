@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 — 2026-10-28
+
+- Make the MiniSearch header a native window drag area so the floating player can be moved.
+- Keep the close button, search field and playback controls interactive.
+
 ## 0.1.0 — 2026-10-28 (preview)
 
 - Floating, always-on-top Spotify mini player using Document Picture-in-Picture.
