@@ -75,11 +75,11 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       const layer = page.locator('.volume-dismiss-layer');
       assert.equal(await layer.evaluate(el => getComputedStyle(el).getPropertyValue('-webkit-app-region')), 'no-drag');
       const header = await page.locator('.track-info').boundingBox();
-      await page.mouse.move(header.x + 5, header.y + 5);
+      await page.mouse.move(header.x + header.width - 15, header.y + 5);
       await page.mouse.down();
       assert.equal(await page.locator('#volume-popup').isVisible(), false);
       assert.equal(await layer.isVisible(), true, 'Dismiss layer protects the complete held press');
-      await page.mouse.move(header.x + 50, header.y + 20, { steps: 5 });
+      await page.mouse.move(header.x + header.width - 45, header.y + 20, { steps: 5 });
       await page.mouse.up();
       assert.equal(await layer.isVisible(), false);
       assert.deepEqual(await page.evaluate(() => volumeDragMoves), []);
@@ -210,6 +210,7 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
         window.resizeRequests = [];
         window.resizeTo = (...args) => resizeRequests.push(args);
         window.controller = MiniSearch.mount(window, Spicetify, { resizeWindow: true, geometry: { compactHeight: 300 } });
+        window.resizeRequests = [];
       });
       await small.getByRole('button', { name: 'Shuffle', exact: true }).click();
       await small.getByRole('button', { name: 'Copy song link' }).click();
@@ -251,7 +252,10 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       const compactHeight = await page.evaluate(() => documentPictureInPicture.window.innerHeight);
       const pipPage = page.context().pages().find(p => p !== page && p.url() === 'about:blank');
       assert.ok(pipPage, 'Picture-in-picture page is exposed for real keyboard input');
-      await pipPage.evaluate(() => setTimeout(() => window.resizeTo(340, 300), 5000));
+      await pipPage.evaluate(() => setTimeout(() => {
+        window.resizeTo = window.testNativeResizeTo;
+        window.resizeTo(340, 300);
+      }, 5000));
       await page.waitForTimeout(5300);
       assert.equal(await page.evaluate(() => documentPictureInPicture.window.innerHeight), compactHeight, 'Delayed native Spotify resize must not expand an empty mini player');
       await pipPage.getByRole('textbox', { name: 'Search songs or artists' }).pressSequentially('midnight');
@@ -266,13 +270,13 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       await pipPage.evaluate(() => {
         const button = document.createElement('button'); button.id = 'resize-test';
         button.textContent = 'Resize test window'; button.style.cssText = 'position:fixed;top:0;left:0;z-index:10000';
-        button.onclick = () => window.testNativeResizeTo(480, 242 + Math.max(0, outerHeight - innerHeight));
+        button.onclick = () => window.testNativeResizeTo(480, 142 + Math.max(0, outerHeight - innerHeight));
         document.body.append(button);
       });
       await pipPage.locator('#resize-test').click();
       await page.waitForFunction(() => {
         const saved = JSON.parse(localStorage.getItem(MiniSearch.GEOMETRY_KEY));
-        return saved?.width >= 400 && saved?.compactHeight >= 200;
+        return saved?.width >= 400 && saved?.compactHeight >= 120 && saved?.compactHeight < 164;
       }, null, { timeout: 5000 });
       const saved = await page.evaluate(() => JSON.parse(localStorage.getItem(MiniSearch.GEOMETRY_KEY)));
       await pipPage.keyboard.press('Control+Shift+k').catch(error => { if (!pipPage.isClosed()) throw error; });

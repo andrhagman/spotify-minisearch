@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.4 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.5 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,16 +9,16 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.4";
+  const VERSION = "0.3.5";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
     if (!raw || typeof raw !== "object") return null;
     const size = (value, fallback, min, max) => typeof value === "number" && Number.isFinite(value) ? Math.max(min, Math.min(max, Math.round(value))) : fallback;
     const geometry = {
-      width: size(raw.width, 320, 280, 4096),
-      compactHeight: size(raw.compactHeight ?? raw.height, 164, 164, 2160),
-      expandedHeight: size(raw.expandedHeight, 398, 240, 2160),
+      width: size(raw.width, 320, 1, 4096),
+      compactHeight: size(raw.compactHeight ?? raw.height, 148, 1, 2160),
+      expandedHeight: size(raw.expandedHeight, 398, 1, 2160),
     };
     if (typeof raw.x === "number" && Number.isFinite(raw.x) && Math.abs(raw.x) < 100000 && typeof raw.y === "number" && Number.isFinite(raw.y) && Math.abs(raw.y) < 100000) {
       geometry.x = Math.round(raw.x); geometry.y = Math.round(raw.y);
@@ -33,7 +33,7 @@
   }
   function windowOptions(geometry, screen) {
     const saved = normalizeGeometry(geometry);
-    const options = { width: saved?.width || 320, height: saved?.compactHeight || 164, preferInitialWindowPlacement: true };
+    const options = { width: saved?.width || 320, height: saved?.compactHeight || 148, preferInitialWindowPlacement: true };
     if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
       let { x, y } = saved;
       // Preserve negative coordinates on multi-monitor desktops. If only one
@@ -138,7 +138,7 @@
     .controls,.controls *,.volume-popup,.volume-popup *,input,button,button *{-webkit-app-region:no-drag;app-region:no-drag}
     .brand-icon{color:#9be6b1;display:flex}.brand{font-size:12px;font-weight:650;letter-spacing:.04em}.version{font-size:10px;color:#9ca89f;margin-left:auto}
     .icon-button{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:50%;flex-shrink:0}
-    .now{display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 8px 4px}
+    .now{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 8px 4px}
     .track-info{min-width:0;flex:1}.eyebrow{font-size:9px;letter-spacing:.14em;color:#a8c0af;font-weight:650;margin:0 0 5px}
     .title{font-size:14px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
     .artist{font-size:11px;color:#b5beb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:3px 0 0}
@@ -205,7 +205,11 @@
     const originalResizeTo = win.resizeTo;
     const resizeTo = (...args) => originalResizeTo.apply(win, args);
     const ignoreForeignResize = () => {};
-    if (resizeWindow) win.resizeTo = ignoreForeignResize;
+    const resizeDescriptor = Object.getOwnPropertyDescriptor(win, "resizeTo");
+    if (resizeWindow) Object.defineProperty(win, "resizeTo", { configurable: true, get: () => ignoreForeignResize, set: () => {} });
+    function compactLimit() {
+      return Math.ceil(app.querySelector(".search-area").getBoundingClientRect().bottom - app.getBoundingClientRect().top);
+    }
     function saveBounds() {
       if (!onBoundsChange || win.innerWidth <= 0 || win.innerHeight <= 0) return;
       onBoundsChange({ ...preferred, width: win.innerWidth, x: win.screenX, y: win.screenY });
@@ -213,12 +217,13 @@
     function sizeWindow() {
       if (!resizeWindow || disposed) return;
       const chrome = Math.max(0, win.outerHeight - win.innerHeight);
-      const contentHeight = expanded ? preferred.expandedHeight : preferred.compactHeight;
+      const contentHeight = expanded ? preferred.expandedHeight : Math.min(preferred.compactHeight, compactLimit());
+      if (!expanded) preferred.compactHeight = contentHeight;
       const height = contentHeight + chrome;
       // A PiP resize consumes user activation. Do not spend it on a no-op,
       // a loading message, or every keystroke before search results arrive.
       if (Math.abs(win.outerHeight - height) <= 1) return;
-      try { pendingHeight = contentHeight; resizeTo(Math.max(280, win.outerWidth || 320), height); } catch { pendingHeight = null; }
+      try { pendingHeight = contentHeight; resizeTo(win.outerWidth || 320, height); } catch { pendingHeight = null; }
     }
     function setExpanded(value) {
       const changed = expanded !== Boolean(value);
@@ -346,10 +351,15 @@
     }
     const header = app.querySelector(".bar");
     on(win, "resize", () => {
+      if (resizeWindow && !expanded && win.innerHeight > compactLimit() + 1) {
+        // Never remember native delayed growth or empty dropdown space as the
+        // compact height. Manual width changes are still saved.
+        sizeWindow(); saveBounds(); return;
+      }
       // Match the requested height instead of ignoring all resize events for a
       // time window: a quick manual resize must become the new preference.
       if (pendingHeight === null || Math.abs(win.innerHeight - pendingHeight) > 1) {
-        preferred[expanded ? "expandedHeight" : "compactHeight"] = Math.max(expanded ? 240 : 164, win.innerHeight);
+        preferred[expanded ? "expandedHeight" : "compactHeight"] = win.innerHeight;
       }
       pendingHeight = null;
       saveBounds();
@@ -441,11 +451,14 @@
       if (disposed) return;
       saveBounds();
       disposed = true; ++requestID; ++actionID; win.clearTimeout(timer);
-      if (resizeWindow && win.resizeTo === ignoreForeignResize) win.resizeTo = originalResizeTo;
+      if (resizeWindow && win.resizeTo === ignoreForeignResize) {
+        if (resizeDescriptor) Object.defineProperty(win, "resizeTo", resizeDescriptor);
+        else delete win.resizeTo;
+      }
       for (const remove of removers.splice(0)) remove();
     }
     on(win, "pagehide", dispose);
-    sync(); runSearch(); $("query").focus();
+    sync(); runSearch(); $("query").focus(); sizeWindow();
     return { dispose, search: runSearch };
   }
 

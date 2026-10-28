@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.5 — 2026-10-28
+
+- Remove the 164px height and 280px width floors when saving a manual window size.
+- Limit compact height to the player and search field, keeping results height separate.
+- Prevent later scripts from replacing the MiniSearch resize guard.
+- Reduce the text-only header height and verify restoring a sub-164px PiP window after reload.
+
 ## 0.3.4 — 2026-10-28
 
 - Display song and band names without artwork in the now-playing header.

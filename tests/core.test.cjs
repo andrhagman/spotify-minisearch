@@ -20,6 +20,13 @@ test('invalid or blocked window storage does not prevent opening', () => {
   assert.doesNotThrow(() => mini.writeGeometry({ setItem: () => { throw new Error('blocked'); } }, {}));
   assert.equal(mini.windowOptions(null).width, 320);
 });
+
+test('small manual sizes are restored without the old 164px minimum', () => {
+  const geometry = mini.normalizeGeometry({ width: 260, compactHeight: 132, expandedHeight: 210 });
+  assert.equal(geometry.width, 260);
+  assert.equal(geometry.compactHeight, 132);
+  assert.equal(mini.windowOptions(geometry).height, 132);
+});
 test('a disconnected secondary screen cannot strand the saved window', () => {
   const options = mini.windowOptions({ x: -380, y: 1700, width: 480, compactHeight: 242 }, { isExtended: false, availLeft: 0, availTop: 0, availWidth: 1920, availHeight: 1080 });
   assert.deepEqual(options.cefOptions.position, { x: 0, y: 838 });
