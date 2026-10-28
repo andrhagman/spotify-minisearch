@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>MiniSearch preview (simulated Spotify)</title></head>
+<body>
+<script src="/tests/mock-spotify.js"></script>
+<script src="/minisearch.js"></script>
+<script>
+  // Preview mode mounts the exact extension UI against a simulated Spotify API.
+  window.controller = MiniSearch.mount(window, Spicetify);
+  document.title = 'MiniSearch preview — simulated Spotify';
+</script>
+</body></html>

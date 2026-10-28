@@ -1,0 +1,11 @@
+[
+  {
+    "name": "MiniSearch",
+    "description": "Search songs, play them, and add them to your queue from an always-on-top mini player.",
+    "preview": "docs/preview.png",
+    "main": "minisearch.js",
+    "readme": "README.md",
+    "authors": [{ "name": "Andreas Hagman", "url": "https://github.com/andrhagman" }],
+    "tags": ["search", "miniplayer", "picture-in-picture", "queue"]
+  }
+]
