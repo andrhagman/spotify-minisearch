@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2 — 2026-10-28
+
+- Prevent Spotify's native mini player from applying its saved dimensions to MiniSearch after opening.
+- Keep native frame resizing and MiniSearch result expansion available.
+- Add a delayed-resize regression check in a real browser PiP window.
+
 ## 0.3.1 — 2026-10-28
 
 - Remove the Save to Liked Songs button from the mini player.

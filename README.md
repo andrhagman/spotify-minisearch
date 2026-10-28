@@ -38,7 +38,7 @@ The shortcut uses a small hidden PowerShell launcher, with no background polling
 
 ### Manual install (regular desktop)
 
-Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.1/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
+Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.2/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
 
 ```powershell
 spicetify config extensions minisearch.js

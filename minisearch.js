@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.1 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.2 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.1";
+  const VERSION = "0.3.2";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -193,6 +193,13 @@
     let actionID = 0, drag = null, expanded = false;
     const preferred = normalizeGeometry(geometry) || normalizeGeometry({});
     let pendingHeight = null;
+    // Spotify observes every Document PiP window and may restore its native
+    // player's saved bounds several seconds after ours opens. Only MiniSearch
+    // may resize this window through JS; native frame resizing stays available.
+    const originalResizeTo = win.resizeTo;
+    const resizeTo = (...args) => originalResizeTo.apply(win, args);
+    const ignoreForeignResize = () => {};
+    if (resizeWindow) win.resizeTo = ignoreForeignResize;
     function saveBounds() {
       if (!onBoundsChange || win.innerWidth <= 0 || win.innerHeight <= 0) return;
       onBoundsChange({ ...preferred, width: win.innerWidth, x: win.screenX, y: win.screenY });
@@ -205,7 +212,7 @@
       // A PiP resize consumes user activation. Do not spend it on a no-op,
       // a loading message, or every keystroke before search results arrive.
       if (Math.abs(win.outerHeight - height) <= 1) return;
-      try { pendingHeight = contentHeight; win.resizeTo(Math.max(280, win.outerWidth || 320), height); } catch { pendingHeight = null; }
+      try { pendingHeight = contentHeight; resizeTo(Math.max(280, win.outerWidth || 320), height); } catch { pendingHeight = null; }
     }
     function setExpanded(value) {
       const changed = expanded !== Boolean(value);
@@ -412,6 +419,7 @@
       if (disposed) return;
       saveBounds();
       disposed = true; ++requestID; ++actionID; win.clearTimeout(timer);
+      if (resizeWindow && win.resizeTo === ignoreForeignResize) win.resizeTo = originalResizeTo;
       for (const remove of removers.splice(0)) remove();
     }
     on(win, "pagehide", dispose);

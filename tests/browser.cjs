@@ -217,12 +217,24 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       await page.goto(base + '/launcher');
       const supported = await page.evaluate(() => Boolean(window.documentPictureInPicture?.requestWindow));
       if (!supported) { t.diagnostic('Real PiP unsupported in this browser; mount and lifecycle covered separately.'); return; }
+      await page.evaluate(() => {
+        const requestWindow = documentPictureInPicture.requestWindow.bind(documentPictureInPicture);
+        documentPictureInPicture.requestWindow = async options => {
+          const win = await requestWindow(options);
+          // Capture before MiniSearch mounts; simulate native frame resizing.
+          win.testNativeResizeTo = win.resizeTo.bind(win);
+          return win;
+        };
+      });
       await page.locator('#launcher').click();
       await page.waitForFunction(() => documentPictureInPicture.window?.document.getElementById('query'));
       assert.equal(await page.evaluate(() => documentPictureInPicture.window.document.getElementById('title').textContent), 'Midnight Signal');
       const compactHeight = await page.evaluate(() => documentPictureInPicture.window.innerHeight);
       const pipPage = page.context().pages().find(p => p !== page && p.url() === 'about:blank');
       assert.ok(pipPage, 'Picture-in-picture page is exposed for real keyboard input');
+      await pipPage.evaluate(() => setTimeout(() => window.resizeTo(340, 300), 5000));
+      await page.waitForTimeout(5300);
+      assert.equal(await page.evaluate(() => documentPictureInPicture.window.innerHeight), compactHeight, 'Delayed native Spotify resize must not expand an empty mini player');
       await pipPage.getByRole('textbox', { name: 'Search songs or artists' }).pressSequentially('midnight');
       await page.waitForFunction(() => documentPictureInPicture.window.document.querySelectorAll('.result').length === 6);
       await page.waitForFunction(height => documentPictureInPicture.window.innerHeight > height, compactHeight, { timeout: 5000 });
@@ -235,7 +247,7 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       await pipPage.evaluate(() => {
         const button = document.createElement('button'); button.id = 'resize-test';
         button.textContent = 'Resize test window'; button.style.cssText = 'position:fixed;top:0;left:0;z-index:10000';
-        button.onclick = () => window.resizeTo(480, 242 + Math.max(0, outerHeight - innerHeight));
+        button.onclick = () => window.testNativeResizeTo(480, 242 + Math.max(0, outerHeight - innerHeight));
         document.body.append(button);
       });
       await pipPage.locator('#resize-test').click();
