@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.9 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.10 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.9";
+  const VERSION = "0.3.10";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -126,7 +126,7 @@
 
   const CSS = `
     :root{color-scheme:dark;font-family:Inter,"Segoe UI",system-ui,sans-serif;color:#f4f5f4;background:#121513;font-synthesis:none}
-    *{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-width:260px;height:100vh;overflow:hidden}
+    *{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-width:0;height:100vh;overflow:hidden}
     button,input{font:inherit}button{color:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:default}
     button{border:0;background:none}button:hover{background:#ffffff13}button:focus-visible,input:focus-visible{outline:2px solid #b8f8cb;outline-offset:3px}
     .app{position:relative;height:100%;display:flex;flex-direction:column;background:#080909}
@@ -168,6 +168,16 @@
     .status{flex-shrink:0;margin:0;padding:3px 10px 5px;color:#acc7b5;font-size:10px;line-height:1.4}.status:empty{display:none}.status[data-error=true]{color:#ffb8a9}
     .busy{opacity:.65}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
     .timeline input{height:2px;margin:1px 0 3px}.controls .icon-button:not(.primary){color:#b8bfba}.controls .icon-button[aria-pressed=true]{color:#1ed760}
+    @media(max-width:260px){
+      .now{gap:6px;padding-left:7px;padding-right:5px}
+      .track-actions .icon-button{width:23px;height:23px}
+      .controls{gap:0;padding-left:4px;padding-right:4px}
+      .controls .icon-button:not(.primary){width:24px;height:27px}
+      .controls .primary{width:30px;height:30px}
+      .controls svg{width:16px;height:16px}
+      .search-area{padding-left:6px;padding-right:6px}
+      .search-box{gap:5px;padding-left:6px;padding-right:6px}
+    }
     @media(prefers-reduced-motion:no-preference){button{transition:background .12s ease,opacity .12s ease}}
   `;
 

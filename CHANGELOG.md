@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.10 — 2026-10-28
+
+- Remove the fixed 260px body width that clipped controls in narrower windows.
+- Adapt button spacing and padding at widths up to 260px without reducing text size.
+- Verify every header and playback button fits at 240px, 260px, and 280px.
+
 ## 0.3.9 — 2026-10-28
 
 - Clear the search field and results when the mini player loses window focus.

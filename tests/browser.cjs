@@ -173,11 +173,22 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.equal(await page.evaluate(() => window.injected), undefined);
     });
     await t.test('small window stays usable without horizontal overflow', async () => {
-      await page.setViewportSize({ width: 280, height: 400 });
-      await search('midnight'); await waitRows(6);
-      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-      assert.equal(await query.isVisible(), true);
-      assert.ok(await page.locator('#results').evaluate(el => el.clientHeight) > 60);
+      for (const width of [240, 260, 280]) {
+        await page.setViewportSize({ width, height: 400 });
+        await search('midnight'); await waitRows(6);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+        assert.equal(await query.isVisible(), true);
+        assert.ok(await page.locator('#results').evaluate(el => el.clientHeight) > 60);
+        const buttons = await page.locator('.controls button,#close').evaluateAll(buttons => buttons.map(button => {
+          const rect = button.getBoundingClientRect(); return { left: rect.left, right: rect.right };
+        }));
+        assert.ok(buttons.every(rect => rect.left >= 0 && rect.right <= width), `All player buttons must fit at ${width}px`);
+        if (width === 240) {
+          await page.getByRole('button', { name: 'Clear search' }).click();
+          await page.setViewportSize({ width, height: 148 });
+          await page.screenshot({ path: path.join(__dirname, '../test-results/narrow-player.png') });
+        }
+      }
       await page.setViewportSize({ width: 320, height: 420 });
       await page.screenshot({ path: path.join(__dirname, '../docs/preview.png') });
     });
