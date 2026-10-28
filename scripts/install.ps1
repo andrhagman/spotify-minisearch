@@ -1,10 +1,10 @@
-# MiniSearch v0.3.3 - run from a normal (non-administrator) PowerShell session.
+# MiniSearch v0.3.4 - run from a normal (non-administrator) PowerShell session.
 [CmdletBinding()]
 param([switch]$Uninstall, [switch]$SkipApply, [switch]$NoShortcut)
 
 $ErrorActionPreference = 'Stop'
 $extensionName = 'minisearch.js'
-$releaseVersion = 'v0.3.3'
+$releaseVersion = 'v0.3.4'
 $cli = Get-Command spicetify -ErrorAction SilentlyContinue
 if (-not $cli) {
     $knownCLI = Join-Path $env:LOCALAPPDATA 'spicetify\spicetify.exe'
@@ -80,7 +80,7 @@ try {
         Invoke-WebRequest -UseBasicParsing -Uri $releaseURL -OutFile $tempFile
     }
     $content = Get-Content -LiteralPath $tempFile -Raw
-    if ($content -notmatch 'MiniSearch v0\.3\.3' -or $content -notmatch 'documentPictureInPicture') {
+    if ($content -notmatch 'MiniSearch v0\.3\.4' -or $content -notmatch 'documentPictureInPicture') {
         throw 'Downloaded file did not look like the expected MiniSearch release.'
     }
     if (Test-Path -LiteralPath $destination) { Copy-Item -LiteralPath $destination -Destination "$destination.previous" -Force }

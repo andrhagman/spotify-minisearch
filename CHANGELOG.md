@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4 — 2026-10-28
+
+- Display song and band names without artwork in the now-playing header.
+
 ## 0.3.3 — 2026-10-28
 
 - Dismiss volume on outside presses, focus changes and switching windows.

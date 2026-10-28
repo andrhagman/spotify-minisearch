@@ -6,7 +6,7 @@ A lightweight [Spicetify](https://spicetify.app/) extension for Spotify desktop:
 
 **Open regular Spotify normally—MiniSearch loads with it.** Tested on Windows with Spotify **1.3.6.1921** and Spicetify **2.46.4**. Use the magnifying-glass button to open the mini player. The Microsoft Store edition has an optional separate launcher; use regular desktop Spotify if you want your usual Spotify icon to load the extension.
 
-<img src="docs/compact.png" width="320" alt="Compact MiniSearch player with artwork, playback controls and search">
+<img src="docs/compact.png" width="320" alt="Compact MiniSearch player with song and band names, playback controls and search">
 
 <details><summary>With search results</summary><img src="docs/preview.png" width="320" alt="Search results dropdown below the compact player"></details>
 
@@ -38,7 +38,7 @@ The shortcut uses a small hidden PowerShell launcher, with no background polling
 
 ### Manual install (regular desktop)
 
-Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.3/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
+Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.4/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
 
 ```powershell
 spicetify config extensions minisearch.js

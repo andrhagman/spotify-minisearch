@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.3 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.4 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.3";
+  const VERSION = "0.3.4";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -138,8 +138,7 @@
     .controls,.controls *,.volume-popup,.volume-popup *,input,button,button *{-webkit-app-region:no-drag;app-region:no-drag}
     .brand-icon{color:#9be6b1;display:flex}.brand{font-size:12px;font-weight:650;letter-spacing:.04em}.version{font-size:10px;color:#9ca89f;margin-left:auto}
     .icon-button{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:50%;flex-shrink:0}
-    .now{display:flex;align-items:center;gap:10px;padding:8px 8px 4px}.art{width:52px;height:52px;flex-shrink:0;border-radius:4px;background:#25352c;object-fit:cover}
-    .placeholder{display:flex;align-items:center;justify-content:center;color:#a6c7af}.placeholder svg{width:30px;height:30px}
+    .now{display:flex;align-items:center;gap:10px;min-height:64px;padding:8px 8px 4px}
     .track-info{min-width:0;flex:1}.eyebrow{font-size:9px;letter-spacing:.14em;color:#a8c0af;font-weight:650;margin:0 0 5px}
     .title{font-size:14px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
     .artist{font-size:11px;color:#b5beb8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:3px 0 0}
@@ -182,7 +181,7 @@
     app.className = "app";
     // This template contains only our static markup. Spotify metadata always uses textContent.
     app.innerHTML = `
-      <header class="bar" title="MiniSearch v${VERSION} · Drag here to move"><span class="sr-only">MiniSearch v${VERSION}</span><section class="now" aria-label="Now playing"><div id="art-placeholder" class="art placeholder">${icon("music")}</div><img id="art" class="art" alt="" hidden><div class="track-info"><h1 class="title" id="title">Nothing playing yet</h1><p class="artist" id="artist">Find a song below</p></div><div class="track-actions"><button class="icon-button" id="close" aria-label="Close mini player" title="Close">${icon("close")}</button></div></section></header>
+      <header class="bar" title="MiniSearch v${VERSION} · Drag here to move"><span class="sr-only">MiniSearch v${VERSION}</span><section class="now" aria-label="Now playing"><div class="track-info"><h1 class="title" id="title">Nothing playing yet</h1><p class="artist" id="artist">Find a song below</p></div><div class="track-actions"><button class="icon-button" id="close" aria-label="Close mini player" title="Close">${icon("close")}</button></div></section></header>
       <div class="controls" aria-label="Playback controls"><button class="icon-button" id="volume-toggle" aria-label="Show volume" title="Volume" aria-expanded="false">${icon("volume")}</button><label class="volume-popup" id="volume-popup" hidden><span class="sr-only">Volume</span><input id="volume" type="range" aria-label="Volume" min="0" max="100" step="1" value="50"></label><button class="icon-button" id="shuffle" aria-label="Shuffle" title="Shuffle" aria-pressed="false">${icon("shuffle")}</button><button class="icon-button" id="previous" aria-label="Previous track" title="Previous">${icon("previous")}</button><button class="icon-button primary" id="play-pause" aria-label="Play" title="Play">${icon("play")}</button><button class="icon-button" id="next" aria-label="Next track" title="Next">${icon("next")}</button><button class="icon-button" id="repeat" aria-label="Repeat off" title="Repeat off" aria-pressed="false">${icon("repeat")}</button><button class="icon-button" id="share" aria-label="Copy song link" title="Copy song link">${icon("share")}</button></div>
       <div class="timeline"><input id="seek" type="range" aria-label="Seek position" min="0" max="1000" value="0" step="1"><div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div></div>
       <form class="search-area" role="search"><label class="search-box">${icon("search")}<span class="sr-only">Search songs or artists</span><input id="query" type="text" placeholder="Search songs or artists" autocomplete="off" spellcheck="false" maxlength="300"><button id="clear" class="icon-button clear" type="button" aria-label="Clear search" title="Clear search" hidden>${icon("close")}</button></label></form>
@@ -324,10 +323,6 @@
       $("artist").textContent = item?.artists?.map(a => a.name).filter(Boolean).join(", ") || metadata.artist_name || "Find your next song below";
       $("title").title = $("title").textContent;
       $("artist").title = $("artist").textContent;
-      const url = imageURL(metadata.image_url || metadata.image_xlarge_url || item?.album?.images?.[0]?.url || item?.images?.[0]?.url);
-      $("art").hidden = !url; $("art-placeholder").hidden = Boolean(url);
-      if (url && $("art").getAttribute("src") !== url) $("art").src = url;
-      if (!url) $("art").removeAttribute("src");
       const playing = Boolean(player.isPlaying());
       $("play-pause").innerHTML = icon(playing ? "pause" : "play");
       $("play-pause").setAttribute("aria-label", playing ? "Pause" : "Play");

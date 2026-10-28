@@ -28,9 +28,10 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
     const search = async text => { await query.fill(text); await query.press('Enter'); };
     await page.goto(base);
 
-    await t.test('initial state, artwork, pause, next and previous controls', async () => {
+    await t.test('initial text-only song details, pause, next and previous controls', async () => {
       assert.equal(await page.locator('#title').textContent(), 'Midnight Signal');
-      assert.equal(await page.locator('#art-placeholder').isVisible(), false);
+      assert.equal(await page.locator('#artist').textContent(), 'The Night Atlas');
+      assert.equal(await page.locator('.now img').count(), 0);
       assert.equal(await page.locator('#results').isVisible(), false);
       await page.setViewportSize({ width: 320, height: 164 });
       await page.screenshot({ path: path.join(__dirname, '../docs/compact.png') });
