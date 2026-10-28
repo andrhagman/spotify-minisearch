@@ -228,6 +228,27 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.ok(requests[0][1] > requests.at(-1)[1], 'A failed replacement search collapses back to the small height');
       await small.close();
     });
+    await t.test('manual resizing saves each size without issuing an opposing resize', async () => {
+      const resizePage = await browser.newPage({ viewport: { width: 320, height: 148 } });
+      await resizePage.goto(base);
+      await resizePage.evaluate(() => {
+        controller.dispose();
+        window.resizeRequests = []; window.savedBounds = [];
+        window.resizeTo = (...args) => resizeRequests.push(args);
+        window.controller = MiniSearch.mount(window, Spicetify, {
+          resizeWindow: true, geometry: { compactHeight: 148 },
+          onBoundsChange: bounds => savedBounds.push(bounds),
+        });
+        resizeRequests.length = 0;
+      });
+      for (const height of [180, 220, 190, 160, 136]) {
+        await resizePage.setViewportSize({ width: 360, height });
+        await resizePage.waitForFunction(height => savedBounds.at(-1)?.compactHeight === height, height);
+      }
+      assert.deepEqual(await resizePage.evaluate(() => resizeRequests), [], 'Dragging the frame must never trigger a correction');
+      assert.equal(await resizePage.evaluate(() => savedBounds.at(-1).compactHeight), 136);
+      await resizePage.close();
+    });
     await t.test('real Chromium picture-in-picture window opens and can reopen', async () => {
       // Fixed Playwright viewports are inherited by PiP and hide real native
       // content resizing. Use a normal window for this geometry check.

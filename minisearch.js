@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.5 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.6 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.5";
+  const VERSION = "0.3.6";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -207,9 +207,6 @@
     const ignoreForeignResize = () => {};
     const resizeDescriptor = Object.getOwnPropertyDescriptor(win, "resizeTo");
     if (resizeWindow) Object.defineProperty(win, "resizeTo", { configurable: true, get: () => ignoreForeignResize, set: () => {} });
-    function compactLimit() {
-      return Math.ceil(app.querySelector(".search-area").getBoundingClientRect().bottom - app.getBoundingClientRect().top);
-    }
     function saveBounds() {
       if (!onBoundsChange || win.innerWidth <= 0 || win.innerHeight <= 0) return;
       onBoundsChange({ ...preferred, width: win.innerWidth, x: win.screenX, y: win.screenY });
@@ -217,8 +214,7 @@
     function sizeWindow() {
       if (!resizeWindow || disposed) return;
       const chrome = Math.max(0, win.outerHeight - win.innerHeight);
-      const contentHeight = expanded ? preferred.expandedHeight : Math.min(preferred.compactHeight, compactLimit());
-      if (!expanded) preferred.compactHeight = contentHeight;
+      const contentHeight = expanded ? preferred.expandedHeight : preferred.compactHeight;
       const height = contentHeight + chrome;
       // A PiP resize consumes user activation. Do not spend it on a no-op,
       // a loading message, or every keystroke before search results arrive.
@@ -351,11 +347,8 @@
     }
     const header = app.querySelector(".bar");
     on(win, "resize", () => {
-      if (resizeWindow && !expanded && win.innerHeight > compactLimit() + 1) {
-        // Never remember native delayed growth or empty dropdown space as the
-        // compact height. Manual width changes are still saved.
-        sizeWindow(); saveBounds(); return;
-      }
+      // Never resize in response to a resize event. The native frame owns the
+      // user's drag; responding with resizeTo fights it and causes flicker.
       // Match the requested height instead of ignoring all resize events for a
       // time window: a quick manual resize must become the new preference.
       if (pendingHeight === null || Math.abs(win.innerHeight - pendingHeight) > 1) {

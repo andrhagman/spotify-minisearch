@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.6 — 2026-10-28
+
+- Stop correcting window height during native frame resizing, which caused flickering and size jumps.
+- Preserve manual compact dimensions without a content-height cap.
+- Verify a sequence of expanding and shrinking frame sizes issues no opposing resize calls.
+
 ## 0.3.5 — 2026-10-28
 
 - Remove the 164px height and 280px width floors when saving a manual window size.
