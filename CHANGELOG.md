@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.8 — 2026-10-28
+
+- Add explicit prerequisites, beginner installation steps, and direct release downloads.
+- Explain standard Spotify launching, optional Store setup, updates, and removal.
+- Include refreshed screenshots of the current player in the downloadable guide.
+
 ## 0.3.7 — 2026-10-28
 
 - Add 1px between the progress bar and search field.

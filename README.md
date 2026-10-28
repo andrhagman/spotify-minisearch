@@ -12,23 +12,70 @@ A lightweight [Spicetify](https://spicetify.app/) extension for Spotify desktop:
 
 *Illustrative preview uses fictional music and simulated responses.*
 
-## Download and install
+## Prerequisites
 
-**[Download the release ZIP](https://github.com/andrhagman/spotify-minisearch/releases)** and extract it.
+- **Windows desktop.** The bundled installer and live testing target Windows; other operating systems have not been verified.
+- **Spotify desktop**, signed in to your account. Get the regular installer using **Download directly from Spotify** on [Spotify's Windows download page](https://www.spotify.com/download/windows/). This edition lets you open Spotify normally with MiniSearch loaded.
+- **Spicetify CLI**, installed and compatible with your Spotify version. The tested pairing is Spotify **1.3.6.1921** with Spicetify **2.46.4**; newer Spotify releases may need a Spicetify update.
+- **PowerShell**, included with Windows, and an internet connection for song searches.
 
-1. Install [Spicetify](https://spicetify.app/docs/getting-started) if you do not already have it. Both regular Spotify desktop and Microsoft Store Spotify are supported by this installer. Open Spotify, sign in, and play a song once first.
-2. Open a normal, non-administrator PowerShell in the extracted folder:
+You do **not** need Node.js, Git, a Spotify developer account, an API key, or Spicetify Marketplace to install MiniSearch. The extension is free; your Spotify account's normal playback restrictions still apply. MiniSearch runs inside Spotify and requires Spotify to stay open.
 
-   ```powershell
-   powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
-   ```
+## Install on Windows
 
-3. **Microsoft Store:** launch from the new **Spotify MiniSearch** desktop shortcut. **Regular desktop:** open Spotify normally.
-4. Click the **MiniSearch magnifying glass** in Spotify's top bar or near the playback controls.
+### 1. Prepare Spotify
 
-No Spotify developer account, API key, separate login, or subscription to this extension is needed. Your Spotify account's normal playback restrictions still apply.
+Install regular desktop Spotify, open it, sign in, and play a song once so Spotify creates its settings. Then fully quit Spotify, including its system-tray icon if present.
 
-### Microsoft Store: how it works
+If you already use Microsoft Store Spotify and want to keep it, see the [Store edition instructions](#microsoft-store-edition-optional) below. For the normal Spotify launcher experience, use the regular desktop edition. This installer does not automatically uninstall either edition or migrate your account settings.
+
+### 2. Install Spicetify
+
+If Spicetify is already installed, skip the installation command. Otherwise, open a normal **PowerShell** window and run:
+
+```powershell
+winget install --id Spicetify.Spicetify --exact
+```
+
+If `winget` is unavailable, use one of the alternatives in the [official Spicetify setup guide](https://spicetify.app/docs/getting-started). Close and reopen PowerShell after installation, then run:
+
+```powershell
+spicetify -v
+spicetify
+```
+
+The first command verifies installation; running Spicetify once initializes its configuration. Use a normal, **non-administrator** PowerShell window for MiniSearch installation.
+
+### 3. Download MiniSearch
+
+**[Download MiniSearch v0.3.8 ZIP](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.8/minisearch-v0.3.8.zip)**, then choose **Extract All**. Download the `minisearch-v0.3.8.zip` asset from the [release page](https://github.com/andrhagman/spotify-minisearch/releases/tag/v0.3.8), rather than GitHub's automatically generated source-code ZIP.
+
+Open PowerShell in the extracted folder containing `install.ps1`, `minisearch.js`, and `README.md`. Run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+The installer registers MiniSearch in Spicetify and applies it to Spotify. Other registered extensions are preserved. Spicetify may ask to refresh its Spotify backup; read and answer its prompt to continue.
+
+### 4. Open the mini player
+
+Open Spotify using your **normal Spotify icon**. Click the **MiniSearch magnifying-glass button** in the top bar or beside the playback controls. Type a song title or artist to search; click a result to play it, or **+** to queue it.
+
+**Ctrl+Shift+K** is an optional way to open MiniSearch while Spotify is focused. A special launcher or keyboard shortcut is not required for the regular desktop edition. Spotify's original mini player is a separate feature; use the MiniSearch search icon for this extension.
+
+## Microsoft Store edition (optional)
+
+The Store edition requires a **separate Spotify MiniSearch launcher**. It does not load the extension when opened through its original Spotify shortcut. Regular desktop Spotify is recommended if you want to avoid this extra launcher.
+
+1. Open Store Spotify, sign in, and play a song once, then quit it.
+2. Install and initialize Spicetify as above.
+3. Extract the release ZIP and run `install.ps1` using the command above.
+4. Open the generated **Spotify MiniSearch** desktop shortcut, then click the MiniSearch magnifying glass.
+
+The Store search, playback, and queue path was tested with the versions listed above. Automatic rebuilding after a future Store update has not been verified live.
+
+### How the Store launcher works
 
 Spicetify supports the Store edition through `--app-directory`, but launching its default writable folder did not work on the tested machine. MiniSearch copies the prepared UI assets into **the Store package's own `LocalState\MiniSearchApps` folder** and launches the installed Store app with that directory. This was verified with live search, playback, and queueing.
 
@@ -38,7 +85,7 @@ The shortcut uses a small hidden PowerShell launcher, with no background polling
 
 ### Manual install (regular desktop)
 
-Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.7/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
+Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.8/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
 
 ```powershell
 spicetify config extensions minisearch.js
@@ -69,10 +116,23 @@ Spotify's original mini player stays available. MiniSearch has its **own magnify
 
 - **Store app opens without MiniSearch:** use the **Spotify MiniSearch** desktop shortcut. If needed, rerun the installer after updating Spicetify.
 - **No button:** check `spicetify config extensions`, apply again, and reopen from the appropriate shortcut.
+- **`spicetify` is not recognized:** reopen PowerShell after installing Spicetify. Follow the official setup guide if the command is still missing.
+- **`install.ps1` cannot be found:** extract the release ZIP first and open PowerShell in the folder containing that file. Running the command from another folder will not find it.
 - **PiP unavailable:** update Spotify and Spicetify to compatible versions. The extension reports missing picture-in-picture support explicitly.
 - **Search unavailable:** check your connection/login and retry with Enter. MiniSearch uses the client's native search definition (`searchDesktop` or `searchModalResults`) and falls back to authenticated REST search. No private query hashes are hardcoded. Current modal search returns mixed top matches; MiniSearch displays the song matches and omits durations when Spotify does not supply them.
 - **Store launcher error:** inspect `%LOCALAPPDATA%\SpotifyMiniSearch\launcher.log`. The launcher also shows a message if rebuilding after an update fails.
 - **After Spotify updates:** a compatible [Spicetify update](https://spicetify.app/docs/faq) may be needed. Older and future Spotify releases have not all been tested.
+
+## Update MiniSearch
+
+Download and extract the newer release ZIP. For regular desktop Spotify with Spicetify already applied, run these commands from the extracted folder:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -SkipApply
+spicetify apply
+```
+
+Then fully quit and reopen Spotify. For the Store edition, rerun `install.ps1` without `-SkipApply`, then use the Spotify MiniSearch launcher. If Spotify itself has updated, first make sure your Spicetify version supports it and follow Spicetify's update instructions.
 
 ## Remove
 

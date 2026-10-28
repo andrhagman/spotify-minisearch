@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.7 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.8 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.7";
+  const VERSION = "0.3.8";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {

@@ -1,10 +1,10 @@
-# Validation — v0.3.0
+# Validation — v0.3.8
 
 ## Regular Windows desktop and resize verification
 
 Regular Spotify 1.3.6.1921 was patched with Spicetify 2.46.4 and launched through the ordinary Spotify icon. The user confirmed MiniSearch works from this launch.
 
-Automated Edge tests cover remembered dimensions after reloading the extension, immediate manual resizing after automatic expansion, compact playback controls and status messages preserving height, and failed replacement searches collapsing the empty results area. These regression cases use simulated Spotify APIs; native Spotify behavior for the latest resize correction has not yet been verified by the user.
+Automated Edge tests cover remembered dimensions below the former 164px minimum after reloading the extension, successive manual frame sizes without opposing resize calls, compact playback controls and status messages preserving height, and failed replacement searches collapsing the empty results area. They also cover an attempted delayed resize and replacement of the resize guard, volume dismissal without header dragging, and Escape keeping the player open. These regression cases use simulated Spotify APIs; they do not establish compatibility with every Spotify version or native desktop environment.
 
 ## Live Windows / Microsoft Store verification
 
@@ -22,7 +22,7 @@ The live test revealed that the client exposes `searchModalResults`, not `search
 
 ## Automated verification
 
-The v0.2.0 compact layout, dropdown visibility, expanded controls and shortcut capture were tested in an isolated browser with simulated Spotify APIs. These changes were made without controlling the user's open desktop session. Live header dragging remains unverified.
+The current compact layout, dropdown visibility, controls, resizing and shortcut capture were tested in an isolated browser with simulated Spotify APIs. Live Windows feedback also covered moving the window and opening it from regular Spotify.
 
 - Unit tests: parsing REST/GraphQL responses, provider fallback, unavailable tracks, encoding, image protocols and duration formatting.
 - Browser UI tests in isolated Microsoft Edge with simulated Spotify APIs: search, play, queue, controls, keyboard navigation, stale requests, clear while searching, failure states, safe metadata rendering, responsive layout and cleanup.

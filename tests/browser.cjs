@@ -33,7 +33,7 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.equal(await page.locator('#artist').textContent(), 'The Night Atlas');
       assert.equal(await page.locator('.now img').count(), 0);
       assert.equal(await page.locator('#results').isVisible(), false);
-      await page.setViewportSize({ width: 320, height: 164 });
+      await page.setViewportSize({ width: 320, height: 148 });
       await page.screenshot({ path: path.join(__dirname, '../docs/compact.png') });
       await page.setViewportSize({ width: 320, height: 420 });
       await page.getByRole('button', { name: 'Pause', exact: true }).click();
