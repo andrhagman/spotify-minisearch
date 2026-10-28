@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.10 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.11 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.10";
+  const VERSION = "0.3.11";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -206,7 +206,7 @@
     app.append(volumeDismissLayer);
     const $ = id => doc.getElementById(id);
     let disposed = false, requestID = 0, timer = null, seeking = false;
-    let actionID = 0, drag = null, expanded = false;
+    let actionID = 0, drag = null, expanded = false, displayedPlaying = null;
     const preferred = normalizeGeometry(geometry) || normalizeGeometry({});
     let pendingHeight = null;
     // Spotify observes every Document PiP window and may restore its native
@@ -335,9 +335,14 @@
       $("title").title = $("title").textContent;
       $("artist").title = $("artist").textContent;
       const playing = Boolean(player.isPlaying());
-      $("play-pause").innerHTML = icon(playing ? "pause" : "play");
-      $("play-pause").setAttribute("aria-label", playing ? "Pause" : "Play");
-      $("play-pause").title = playing ? "Pause" : "Play";
+      // Progress ticks can arrive between mouse down and mouse up. Replacing
+      // the SVG during that press removes its target and loses the click.
+      if (playing !== displayedPlaying) {
+        displayedPlaying = playing;
+        $("play-pause").innerHTML = icon(playing ? "pause" : "play");
+        $("play-pause").setAttribute("aria-label", playing ? "Pause" : "Play");
+        $("play-pause").title = playing ? "Pause" : "Play";
+      }
       $("shuffle").disabled = typeof player.setShuffle !== "function";
       $("shuffle").setAttribute("aria-pressed", String(Boolean(player.getShuffle?.())));
       const repeat = Number(player.getRepeat?.()) || 0;
@@ -474,6 +479,26 @@
     host.__miniSearchLoaded = true;
     let pip = null, controller = null, opening = false, attempts = 0;
     let geometry = readGeometry(host.localStorage);
+    // Spotify discovers documentPictureInPicture.window on player updates and
+    // initializes its native mini-player UI/bounds in any window it finds.
+    // Keep our owned window private; pass through native windows otherwise.
+    const pipAPI = host.documentPictureInPicture;
+    if (pipAPI) {
+      let prototype = pipAPI, windowDescriptor;
+      while (prototype && !windowDescriptor) {
+        windowDescriptor = Object.getOwnPropertyDescriptor(prototype, "window");
+        prototype = Object.getPrototypeOf(prototype);
+      }
+      if (windowDescriptor?.get) {
+        const getNativeWindow = windowDescriptor.get.bind(pipAPI);
+        try {
+          Object.defineProperty(pipAPI, "window", {
+            configurable: true,
+            get: () => opening || (pip && !pip.closed) ? null : getNativeWindow(),
+          });
+        } catch { /* Older clients may not allow shadowing this getter. */ }
+      }
+    }
     function ready() {
       const sp = host.Spicetify;
       if (!sp?.Player?.addEventListener || !sp?.CosmosAsync || !sp?.addToQueue) {
@@ -494,6 +519,7 @@
           const options = windowOptions(geometry, host.screen);
           const win = await host.documentPictureInPicture.requestWindow(options);
           pip = win;
+          host.__miniSearchWindow = win;
           controller?.dispose();
           // CEF's creation-time position is the primary path. moveTo also
           // restores it on older Spotify builds that support the move API.
@@ -501,10 +527,15 @@
           controller = mount(win, sp, { resizeWindow: true, geometry, onBoundsChange: bounds => {
             geometry = normalizeGeometry(bounds); writeGeometry(host.localStorage, geometry);
           } });
-          win.addEventListener("pagehide", () => { controller?.dispose(); controller = null; if (pip === win) pip = null; }, { once: true });
+          win.addEventListener("pagehide", () => {
+            controller?.dispose(); controller = null;
+            if (pip === win) pip = null;
+            if (host.__miniSearchWindow === win) host.__miniSearchWindow = null;
+          }, { once: true });
         } catch {
           controller?.dispose(); controller = null;
           if (pip && !pip.closed) pip.close(); pip = null;
+          host.__miniSearchWindow = null;
           sp.showNotification("MiniSearch couldn’t open. Close other mini players and try again.", true);
         } finally { opening = false; }
       }

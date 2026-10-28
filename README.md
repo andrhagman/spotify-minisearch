@@ -48,7 +48,7 @@ The first command verifies installation; running Spicetify once initializes its 
 
 ### 3. Download MiniSearch
 
-**[Download MiniSearch v0.3.10 ZIP](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.10/minisearch-v0.3.10.zip)**, then choose **Extract All**. Download the `minisearch-v0.3.10.zip` asset from the [release page](https://github.com/andrhagman/spotify-minisearch/releases/tag/v0.3.10), rather than GitHub's automatically generated source-code ZIP.
+**[Download MiniSearch v0.3.11 ZIP](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.11/minisearch-v0.3.11.zip)**, then choose **Extract All**. Download the `minisearch-v0.3.11.zip` asset from the [release page](https://github.com/andrhagman/spotify-minisearch/releases/tag/v0.3.11), rather than GitHub's automatically generated source-code ZIP.
 
 Open PowerShell in the extracted folder containing `install.ps1`, `minisearch.js`, and `README.md`. Run:
 
@@ -85,7 +85,7 @@ The shortcut uses a small hidden PowerShell launcher, with no background polling
 
 ### Manual install (regular desktop)
 
-Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.10/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
+Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.3.11/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
 
 ```powershell
 spicetify config extensions minisearch.js

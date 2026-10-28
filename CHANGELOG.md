@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.11 — 2026-10-28
+
+- Keep the play/pause icon stable during progress updates so clicks are not cancelled.
+- Hide the owned PiP window from Spotify's native mini-player initialization; native PiP windows still pass through normally.
+- Verify playback initialization preserves bounds, clicks survive progress ticks, and native PiP remains available after closing MiniSearch.
+
 ## 0.3.10 — 2026-10-28
 
 - Remove the fixed 260px body width that clipped controls in narrower windows.

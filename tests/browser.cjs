@@ -42,6 +42,16 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       await page.getByRole('button', { name: 'Previous track' }).click();
       assert.deepEqual(await page.evaluate(() => [mockCalls.next, mockCalls.back]), [1, 1]);
     });
+    await t.test('pause click survives progress updates while the mouse is held', async () => {
+      await page.evaluate(() => { if (!Spicetify.Player.isPlaying()) Spicetify.Player.togglePlay(); });
+      const before = await page.evaluate(() => Spicetify.Player.isPlaying());
+      const bounds = await page.locator('#play-pause svg').boundingBox();
+      await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+      await page.mouse.down();
+      await page.evaluate(() => Spicetify.Player.seek(Spicetify.Player.getProgress() + 1000));
+      await page.mouse.up();
+      assert.equal(await page.evaluate(() => Spicetify.Player.isPlaying()), !before);
+    });
     await t.test('search shows songs and supports play and queue', async () => {
       await search('midnight'); await waitRows(6);
       await page.getByRole('button', { name: 'Add Midnight Signal to queue', exact: true }).click();
@@ -300,9 +310,13 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
         };
       });
       await page.locator('#launcher').click();
-      await page.waitForFunction(() => documentPictureInPicture.window?.document.getElementById('query'));
-      assert.equal(await page.evaluate(() => documentPictureInPicture.window.document.getElementById('title').textContent), 'Midnight Signal');
-      const compactHeight = await page.evaluate(() => documentPictureInPicture.window.innerHeight);
+      await page.waitForFunction(() => window.__miniSearchWindow?.document.getElementById('query'));
+      assert.equal(await page.evaluate(() => documentPictureInPicture.window), null, 'Spotify must not discover MiniSearch as its own native mini player');
+      assert.equal(await page.evaluate(() => window.__miniSearchWindow.document.getElementById('title').textContent), 'Midnight Signal');
+      const compactHeight = await page.evaluate(() => window.__miniSearchWindow.innerHeight);
+      await page.evaluate(() => Spicetify.Player.togglePlay());
+      assert.equal(await page.evaluate(() => documentPictureInPicture.window), null, 'Playback initialization must not expose the owned window to Spotify');
+      assert.equal(await page.evaluate(() => window.__miniSearchWindow.innerHeight), compactHeight, 'Starting or pausing playback must not change the window size');
       const pipPage = page.context().pages().find(p => p !== page && p.url() === 'about:blank');
       assert.ok(pipPage, 'Picture-in-picture page is exposed for real keyboard input');
       await pipPage.evaluate(() => setTimeout(() => {
@@ -310,15 +324,15 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
         window.resizeTo(340, 300);
       }, 5000));
       await page.waitForTimeout(5300);
-      assert.equal(await page.evaluate(() => documentPictureInPicture.window.innerHeight), compactHeight, 'Delayed native Spotify resize must not expand an empty mini player');
+      assert.equal(await page.evaluate(() => window.__miniSearchWindow.innerHeight), compactHeight, 'Delayed native Spotify resize must not expand an empty mini player');
       await pipPage.getByRole('textbox', { name: 'Search songs or artists' }).pressSequentially('midnight');
-      await page.waitForFunction(() => documentPictureInPicture.window.document.querySelectorAll('.result').length === 6);
-      await page.waitForFunction(height => documentPictureInPicture.window.innerHeight > height, compactHeight, { timeout: 5000 });
+      await page.waitForFunction(() => window.__miniSearchWindow.document.querySelectorAll('.result').length === 6);
+      await page.waitForFunction(height => window.__miniSearchWindow.innerHeight > height, compactHeight, { timeout: 5000 });
       await pipPage.keyboard.press('Escape');
-      await page.waitForFunction(height => documentPictureInPicture.window.innerHeight <= height + 1, compactHeight, { timeout: 5000 });
+      await page.waitForFunction(height => window.__miniSearchWindow.innerHeight <= height + 1, compactHeight, { timeout: 5000 });
       assert.equal(await pipPage.getByRole('textbox', { name: 'Search songs or artists' }).inputValue(), '');
       await pipPage.keyboard.press('Escape');
-      assert.equal(await page.evaluate(() => Boolean(documentPictureInPicture.window && !documentPictureInPicture.window.closed)), true, 'Escape with an empty query must keep MiniSearch open');
+      assert.equal(await page.evaluate(() => Boolean(window.__miniSearchWindow && !window.__miniSearchWindow.closed)), true, 'Escape with an empty query must keep MiniSearch open');
       await page.waitForTimeout(400);
       await pipPage.evaluate(() => {
         const button = document.createElement('button'); button.id = 'resize-test';
@@ -333,15 +347,24 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       }, null, { timeout: 5000 });
       const saved = await page.evaluate(() => JSON.parse(localStorage.getItem(MiniSearch.GEOMETRY_KEY)));
       await pipPage.keyboard.press('Control+Shift+k').catch(error => { if (!pipPage.isClosed()) throw error; });
-      await page.waitForFunction(() => !documentPictureInPicture.window);
+      await page.waitForFunction(() => !window.__miniSearchWindow);
       assert.deepEqual(await page.evaluate(() => Object.values(mockCalls.listeners)), [0, 0, 0]);
       await page.reload(); // A new extension instance must read persisted preferences.
       await page.locator('#launcher').click();
-      await page.waitForFunction(() => documentPictureInPicture.window?.document.getElementById('query'));
-      const restored = await page.evaluate(() => ({ width: documentPictureInPicture.window.innerWidth, height: documentPictureInPicture.window.innerHeight }));
+      await page.waitForFunction(() => window.__miniSearchWindow?.document.getElementById('query'));
+      const restored = await page.evaluate(() => ({ width: window.__miniSearchWindow.innerWidth, height: window.__miniSearchWindow.innerHeight }));
       assert.ok(Math.abs(restored.width - saved.width) <= 4, `Restored width ${restored.width} should match ${saved.width}`);
       assert.ok(Math.abs(restored.height - saved.compactHeight) <= 4, `Restored height ${restored.height} should match ${saved.compactHeight}`);
-      await page.evaluate(() => documentPictureInPicture.window.close());
+      await page.evaluate(() => window.__miniSearchWindow.close());
+      await page.evaluate(() => {
+        const button = document.createElement('button'); button.id = 'native-launch'; button.textContent = 'Native PiP';
+        button.onclick = async () => { window.testNativeWindow = await documentPictureInPicture.requestWindow({ width: 300, height: 300 }); };
+        document.body.append(button);
+      });
+      await page.locator('#native-launch').click();
+      await page.waitForFunction(() => Boolean(window.testNativeWindow));
+      assert.equal(await page.evaluate(() => documentPictureInPicture.window === window.testNativeWindow), true, 'Native Spotify windows remain discoverable when MiniSearch is closed');
+      await page.evaluate(() => window.testNativeWindow.close());
       await page.close();
     });
     assert.deepEqual(errors, [], 'No unhandled browser errors');
