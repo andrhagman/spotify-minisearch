@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3 — 2026-10-28
+
+- Dismiss volume on outside presses, focus changes and switching windows.
+- Protect the full outside press and release from starting a native header drag.
+- Keep the volume slider interactive above the dismissal layer.
+
 ## 0.3.2 — 2026-10-28
 
 - Prevent Spotify's native mini player from applying its saved dimensions to MiniSearch after opening.

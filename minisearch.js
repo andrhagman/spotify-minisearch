@@ -1,4 +1,4 @@
-/* MiniSearch v0.3.2 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.3.3 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.3.2";
+  const VERSION = "0.3.3";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const GEOMETRY_KEY = "minisearch:window:v1";
   function normalizeGeometry(raw) {
@@ -129,7 +129,7 @@
     *{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-width:260px;height:100vh;overflow:hidden}
     button,input{font:inherit}button{color:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:default}
     button{border:0;background:none}button:hover{background:#ffffff13}button:focus-visible,input:focus-visible{outline:2px solid #b8f8cb;outline-offset:3px}
-    .app{height:100%;display:flex;flex-direction:column;background:#080909}
+    .app{position:relative;height:100%;display:flex;flex-direction:column;background:#080909}
     .bar{position:relative;flex-shrink:0;padding:0}
     .bar,.bar *{-webkit-app-region:drag;app-region:drag;user-select:none}
     .bar button,.bar button *{-webkit-app-region:no-drag;app-region:no-drag}
@@ -149,7 +149,9 @@
     .icon-button[aria-pressed=true]{color:#1ed760}.repeat-one{position:relative}.repeat-one::after{content:'1';position:absolute;right:1px;top:0;font-size:9px;color:#1ed760}
     .timeline{padding:0 9px;flex-shrink:0}.times{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
     input[type=range]{display:block;width:100%;height:4px;margin:6px 0;accent-color:#b5ecc4;cursor:pointer}
-    .volume-popup{position:absolute;left:9px;bottom:43px;width:125px;padding:12px;background:#252525;border:1px solid #444;border-radius:6px;z-index:2}
+    .volume-popup{position:absolute;left:9px;bottom:43px;width:125px;padding:12px;background:#252525;border:1px solid #444;border-radius:6px;z-index:4}
+    #volume-toggle{position:relative;z-index:4}
+    .volume-dismiss-layer{position:absolute;inset:0;z-index:3;-webkit-app-region:no-drag;app-region:no-drag}
     .search-area{padding:5px 8px 7px;flex-shrink:0}.search-box{display:flex;align-items:center;gap:7px;border:1px solid #383d39;border-radius:5px;background:#171b18;padding:0 8px;color:#aab7ae}
     .search-box>svg{width:15px;height:15px}.search-box:focus-within{border-color:#7ab78b}.search-box input{min-width:0;flex:1;width:100%;height:29px;border:0;outline:none;background:none;color:#f6fbf7;font-size:12px}
     .search-box input::placeholder{color:#acbcb1}.search-box input:focus-visible{outline:none}.clear{width:25px;height:25px}.clear svg{width:15px}
@@ -188,6 +190,11 @@
       <section class="results" id="results" aria-label="Search results" aria-busy="false" hidden></section>
       <p class="status" id="status" role="status" aria-live="polite"></p>`;
     doc.body.replaceChildren(app);
+    const volumeDismissLayer = doc.createElement("div");
+    volumeDismissLayer.className = "volume-dismiss-layer";
+    volumeDismissLayer.hidden = true;
+    volumeDismissLayer.setAttribute("aria-hidden", "true");
+    app.append(volumeDismissLayer);
     const $ = id => doc.getElementById(id);
     let disposed = false, requestID = 0, timer = null, seeking = false;
     let actionID = 0, drag = null, expanded = false;
@@ -226,6 +233,12 @@
       target.addEventListener(event, fn, options);
       removers.push(() => target.removeEventListener(event, fn, options));
     };
+    function setVolumeOpen(open, holdDismissLayer = false) {
+      drag = null;
+      $("volume-popup").hidden = !open;
+      $("volume-toggle").setAttribute("aria-expanded", String(open));
+      volumeDismissLayer.hidden = !open && !holdDismissLayer;
+    }
     const status = (message, error = false) => {
       if (disposed) return;
       $("status").textContent = message;
@@ -359,7 +372,7 @@
     });
     on(win, "pointerup", () => { drag = null; saveBounds(); });
     on(win, "pointercancel", () => { drag = null; });
-    on(win, "blur", () => { drag = null; });
+    on(win, "blur", () => { setVolumeOpen(false); });
     on(header, "lostpointercapture", () => { drag = null; });
     on($("close"), "click", () => win.close());
     on($("previous"), "click", () => action(() => sp.Player.back()));
@@ -369,8 +382,22 @@
     on($("repeat"), "click", () => action(async () => { await sp.Player.setRepeat((Number(sp.Player.getRepeat()) + 1) % 3); sync(); }));
     on($("share"), "click", () => action(() => sp.Platform.ClipboardAPI.copy("https://open.spotify.com/track/" + sp.Player.data.item.uri.split(":")[2]), "Song link copied"));
     on($("volume-toggle"), "click", () => {
-      $("volume-popup").hidden = !$("volume-popup").hidden;
-      $("volume-toggle").setAttribute("aria-expanded", String(!$("volume-popup").hidden));
+      setVolumeOpen($("volume-popup").hidden);
+    });
+    // Catch outside presses above the native draggable header. Keep the layer
+    // in place until release so dismissing the popup cannot become a drag.
+    on(volumeDismissLayer, "pointerdown", e => {
+      e.preventDefault(); e.stopImmediatePropagation();
+      setVolumeOpen(false, true);
+      volumeDismissLayer.setPointerCapture(e.pointerId);
+    });
+    on(volumeDismissLayer, "pointerup", e => {
+      e.preventDefault(); e.stopImmediatePropagation(); setVolumeOpen(false);
+    });
+    on(volumeDismissLayer, "pointercancel", () => setVolumeOpen(false));
+    on(volumeDismissLayer, "lostpointercapture", () => setVolumeOpen(false));
+    on(doc, "focusin", e => {
+      if (!e.target.closest(".volume-popup,#volume-toggle")) setVolumeOpen(false);
     });
     on($("seek"), "input", () => { seeking = true; $("elapsed").textContent = formatTime(Number($("seek").value) / 1000 * sp.Player.getDuration()); });
     on($("seek"), "change", () => { seeking = false; action(() => sp.Player.seek(Math.round(Number($("seek").value) / 1000 * sp.Player.getDuration()))); });
@@ -393,7 +420,7 @@
       if (!e.target.closest(".bar") || e.target.closest("button,input,select,textarea,a,[contenteditable],.volume-popup")) drag = null;
       if (!e.target.closest(".search-area,.results,.results-head")) setExpanded(false);
       if (!e.target.closest(".volume-popup,#volume-toggle")) {
-        $("volume-popup").hidden = true; $("volume-toggle").setAttribute("aria-expanded", "false");
+        setVolumeOpen(false);
       }
     });
     on(doc, "keydown", e => {
@@ -401,7 +428,7 @@
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") { e.preventDefault(); $("query").focus(); $("query").select(); }
       if (e.key === "Escape") {
         e.preventDefault(); e.stopImmediatePropagation();
-        $("volume-popup").hidden = true; $("volume-toggle").setAttribute("aria-expanded", "false");
+        setVolumeOpen(false);
         if ($("query").value) { $("query").value = ""; runSearch(); $("query").focus(); }
         else setExpanded(false);
       }

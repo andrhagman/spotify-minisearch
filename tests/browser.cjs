@@ -69,6 +69,24 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       assert.ok(await page.evaluate(() => mockCalls.volume.length) > before);
       assert.deepEqual(await page.evaluate(() => window.volumeDragMoves), []);
     });
+    await t.test('dismissing volume over the header never starts a window drag', async () => {
+      assert.equal(await page.locator('#volume-popup').isVisible(), true);
+      const layer = page.locator('.volume-dismiss-layer');
+      assert.equal(await layer.evaluate(el => getComputedStyle(el).getPropertyValue('-webkit-app-region')), 'no-drag');
+      const header = await page.locator('.track-info').boundingBox();
+      await page.mouse.move(header.x + 5, header.y + 5);
+      await page.mouse.down();
+      assert.equal(await page.locator('#volume-popup').isVisible(), false);
+      assert.equal(await layer.isVisible(), true, 'Dismiss layer protects the complete held press');
+      await page.mouse.move(header.x + 50, header.y + 20, { steps: 5 });
+      await page.mouse.up();
+      assert.equal(await layer.isVisible(), false);
+      assert.deepEqual(await page.evaluate(() => volumeDragMoves), []);
+      await page.getByRole('button', { name: 'Show volume' }).click();
+      await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+      assert.equal(await page.locator('#volume-popup').isVisible(), false, 'Clicking another window dismisses volume');
+      assert.equal(await layer.isVisible(), false);
+    });
     await t.test('keyboard navigates results and Ctrl+F returns to search', async () => {
       await query.focus(); await query.press('ArrowDown');
       assert.equal(await page.evaluate(() => document.activeElement.className), 'result-play');
