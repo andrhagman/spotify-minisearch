@@ -1,4 +1,4 @@
-/* MiniSearch v0.2.2 | MIT License | https://github.com/andrhagman/spotify-minisearch */
+/* MiniSearch v0.2.3 | MIT License | https://github.com/andrhagman/spotify-minisearch */
 (function (root, factory) {
   const api = factory();
   if (typeof module === "object" && module.exports) module.exports = api;
@@ -9,7 +9,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
 
-  const VERSION = "0.2.2";
+  const VERSION = "0.2.3";
   const TRACK_URI = /^spotify:track:[A-Za-z0-9]{22}$/;
   const ICONS = {
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
@@ -347,7 +347,12 @@
     on(doc, "keydown", e => {
       if (e.ctrlKey && e.shiftKey && (e.code === "KeyK" || e.key.toLowerCase() === "k")) { e.preventDefault(); e.stopImmediatePropagation(); win.close(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") { e.preventDefault(); $("query").focus(); $("query").select(); }
-      if (e.key === "Escape") { e.preventDefault(); if ($("query").value) { $("query").value = ""; runSearch(); $("query").focus(); } else win.close(); }
+      if (e.key === "Escape") {
+        e.preventDefault(); e.stopImmediatePropagation();
+        $("volume-popup").hidden = true; $("volume-toggle").setAttribute("aria-expanded", "false");
+        if ($("query").value) { $("query").value = ""; runSearch(); $("query").focus(); }
+        else setExpanded(false);
+      }
       if (e.key === "ArrowDown" && doc.activeElement === $("query")) { const first = app.querySelector(".result-play"); if (first) { e.preventDefault(); first.focus(); } return; }
       if ((e.key === "ArrowDown" || e.key === "ArrowUp") && doc.activeElement?.classList.contains("result-play")) {
         const buttons = [...app.querySelectorAll(".result-play")]; const index = buttons.indexOf(doc.activeElement);

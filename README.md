@@ -38,7 +38,7 @@ The shortcut uses a small hidden PowerShell launcher, with no background polling
 
 ### Manual install (regular desktop)
 
-Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.2.2/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
+Copy [`minisearch.js`](https://github.com/andrhagman/spotify-minisearch/releases/download/v0.2.3/minisearch.js) into Spicetify's **Extensions** folder, alongside the configuration located by `spicetify -c`. On Windows this is usually `%APPDATA%\spicetify\Extensions\`.
 
 ```powershell
 spicetify config extensions minisearch.js
@@ -61,7 +61,7 @@ For the Store edition, use the release ZIP installer so the writable asset direc
 | **Ctrl+F** | Focus the mini player's search field |
 | **Down / Up** | Navigate result Play buttons |
 | **Tab / Shift+Tab** | Navigate all controls, including queue buttons |
-| **Esc** | Clear the query, or close if already empty |
+| **Esc** | Clear search and dismiss popovers; the mini player stays open |
 
 Spotify's original mini player stays available. MiniSearch has its **own magnifying-glass button**. Only one Document Picture-in-Picture window can be open at a time. Spotify must stay running. Borderless/windowed games work better with always-on-top windows than exclusive fullscreen.
 

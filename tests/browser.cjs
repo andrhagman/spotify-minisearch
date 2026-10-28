@@ -203,8 +203,11 @@ test('MiniSearch browser flows against simulated Spotify', { timeout: 90000 }, a
       await pipPage.getByRole('textbox', { name: 'Search songs or artists' }).pressSequentially('midnight');
       await page.waitForFunction(() => documentPictureInPicture.window.document.querySelectorAll('.result').length === 6);
       await page.waitForFunction(height => documentPictureInPicture.window.innerHeight > height, compactHeight, { timeout: 5000 });
-      await pipPage.getByRole('button', { name: 'Clear search' }).click();
+      await pipPage.keyboard.press('Escape');
       await page.waitForFunction(height => documentPictureInPicture.window.innerHeight <= height + 1, compactHeight, { timeout: 5000 });
+      assert.equal(await pipPage.getByRole('textbox', { name: 'Search songs or artists' }).inputValue(), '');
+      await pipPage.keyboard.press('Escape');
+      assert.equal(await page.evaluate(() => Boolean(documentPictureInPicture.window && !documentPictureInPicture.window.closed)), true, 'Escape with an empty query must keep MiniSearch open');
       await pipPage.keyboard.press('Control+Shift+k').catch(error => { if (!pipPage.isClosed()) throw error; });
       await page.waitForFunction(() => !documentPictureInPicture.window);
       assert.deepEqual(await page.evaluate(() => Object.values(mockCalls.listeners)), [0, 0, 0]);

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3 — 2026-10-28
+
+- Escape clears search and dismisses popovers without closing the mini player, including when search is already empty.
+
 ## 0.2.2 — 2026-10-28
 
 - Exclude the volume popup and slider from the native header drag region they overlap.
